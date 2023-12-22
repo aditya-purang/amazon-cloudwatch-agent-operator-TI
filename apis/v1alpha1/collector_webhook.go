@@ -26,9 +26,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/open-telemetry/opentelemetry-operator/internal/config"
-	ta "github.com/open-telemetry/opentelemetry-operator/internal/manifests/targetallocator/adapters"
-	"github.com/open-telemetry/opentelemetry-operator/pkg/featuregate"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/config"
+	ta "github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests/targetallocator/adapters"
+	"github.com/aws/amazon-cloudwatch-agent-operator/pkg/featuregate"
 )
 
 var (
@@ -36,9 +36,9 @@ var (
 	_ admission.CustomDefaulter = &CollectorWebhook{}
 )
 
-// +kubebuilder:webhook:path=/mutate-opentelemetry-io-v1alpha1-opentelemetrycollector,mutating=true,failurePolicy=fail,groups=opentelemetry.io,resources=opentelemetrycollectors,verbs=create;update,versions=v1alpha1,name=mopentelemetrycollector.kb.io,sideEffects=none,admissionReviewVersions=v1
-// +kubebuilder:webhook:verbs=create;update,path=/validate-opentelemetry-io-v1alpha1-opentelemetrycollector,mutating=false,failurePolicy=fail,groups=opentelemetry.io,resources=opentelemetrycollectors,versions=v1alpha1,name=vopentelemetrycollectorcreateupdate.kb.io,sideEffects=none,admissionReviewVersions=v1
-// +kubebuilder:webhook:verbs=delete,path=/validate-opentelemetry-io-v1alpha1-opentelemetrycollector,mutating=false,failurePolicy=ignore,groups=opentelemetry.io,resources=opentelemetrycollectors,versions=v1alpha1,name=vopentelemetrycollectordelete.kb.io,sideEffects=none,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/mutate-cloudwatch-aws-amazon-com-v1alpha1-amazoncloudwatchagent,mutating=true,failurePolicy=fail,groups=cloudwatch.aws.amazon.com,resources=amazoncloudwatchagents,verbs=create;update,versions=v1alpha1,name=mamazoncloudwatchagent.kb.io,sideEffects=none,admissionReviewVersions=v1
+// +kubebuilder:webhook:verbs=create;update,path=/validate-cloudwatch-aws-amazon-com-v1alpha1-amazoncloudwatchagent,mutating=false,failurePolicy=fail,groups=cloudwatch.aws.amazon.com,resources=amazoncloudwatchagents,versions=v1alpha1,name=vamazoncloudwatchagentcreateupdate.kb.io,sideEffects=none,admissionReviewVersions=v1
+// +kubebuilder:webhook:verbs=delete,path=/validate-cloudwatch-aws-amazon-com-v1alpha1-amazoncloudwatchagent,mutating=false,failurePolicy=ignore,groups=cloudwatch.aws.amazon.com,resources=amazoncloudwatchagents,versions=v1alpha1,name=vamazoncloudwatchagentdelete.kb.io,sideEffects=none,admissionReviewVersions=v1
 // +kubebuilder:object:generate=false
 
 type CollectorWebhook struct {
@@ -48,38 +48,38 @@ type CollectorWebhook struct {
 }
 
 func (c CollectorWebhook) Default(ctx context.Context, obj runtime.Object) error {
-	otelcol, ok := obj.(*OpenTelemetryCollector)
+	otelcol, ok := obj.(*AmazonCloudWatchAgent)
 	if !ok {
-		return fmt.Errorf("expected an OpenTelemetryCollector, received %T", obj)
+		return fmt.Errorf("expected an AmazonCloudWatchAgent, received %T", obj)
 	}
 	return c.defaulter(otelcol)
 }
 
 func (c CollectorWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	otelcol, ok := obj.(*OpenTelemetryCollector)
+	otelcol, ok := obj.(*AmazonCloudWatchAgent)
 	if !ok {
-		return nil, fmt.Errorf("expected an OpenTelemetryCollector, received %T", obj)
+		return nil, fmt.Errorf("expected an AmazonCloudWatchAgent, received %T", obj)
 	}
 	return c.validate(otelcol)
 }
 
 func (c CollectorWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	otelcol, ok := newObj.(*OpenTelemetryCollector)
+	otelcol, ok := newObj.(*AmazonCloudWatchAgent)
 	if !ok {
-		return nil, fmt.Errorf("expected an OpenTelemetryCollector, received %T", newObj)
+		return nil, fmt.Errorf("expected an AmazonCloudWatchAgent, received %T", newObj)
 	}
 	return c.validate(otelcol)
 }
 
 func (c CollectorWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	otelcol, ok := obj.(*OpenTelemetryCollector)
+	otelcol, ok := obj.(*AmazonCloudWatchAgent)
 	if !ok || otelcol == nil {
-		return nil, fmt.Errorf("expected an OpenTelemetryCollector, received %T", obj)
+		return nil, fmt.Errorf("expected an AmazonCloudWatchAgent, received %T", obj)
 	}
 	return c.validate(otelcol)
 }
 
-func (c CollectorWebhook) defaulter(r *OpenTelemetryCollector) error {
+func (c CollectorWebhook) defaulter(r *AmazonCloudWatchAgent) error {
 	if len(r.Spec.Mode) == 0 {
 		r.Spec.Mode = ModeDeployment
 	}
@@ -91,7 +91,7 @@ func (c CollectorWebhook) defaulter(r *OpenTelemetryCollector) error {
 		r.Labels = map[string]string{}
 	}
 	if r.Labels["app.kubernetes.io/managed-by"] == "" {
-		r.Labels["app.kubernetes.io/managed-by"] = "opentelemetry-operator"
+		r.Labels["app.kubernetes.io/managed-by"] = "amazon-cloudwatch-agent-operator"
 	}
 
 	// We can default to one because dependent objects Deployment and HorizontalPodAutoScaler
@@ -153,7 +153,7 @@ func (c CollectorWebhook) defaulter(r *OpenTelemetryCollector) error {
 	return nil
 }
 
-func (c CollectorWebhook) validate(r *OpenTelemetryCollector) (admission.Warnings, error) {
+func (c CollectorWebhook) validate(r *AmazonCloudWatchAgent) (admission.Warnings, error) {
 	warnings := admission.Warnings{}
 	// validate volumeClaimTemplates
 	if r.Spec.Mode != ModeStatefulSet && len(r.Spec.VolumeClaimTemplates) > 0 {
@@ -346,7 +346,7 @@ func SetupCollectorWebhook(mgr ctrl.Manager, cfg config.Config) error {
 		cfg:    cfg,
 	}
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&OpenTelemetryCollector{}).
+		For(&AmazonCloudWatchAgent{}).
 		WithValidator(cvw).
 		WithDefaulter(cvw).
 		Complete()

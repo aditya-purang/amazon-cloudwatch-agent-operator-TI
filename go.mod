@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-operator
+module github.com/aws/amazon-cloudwatch-agent-operator
 
 go 1.20
 

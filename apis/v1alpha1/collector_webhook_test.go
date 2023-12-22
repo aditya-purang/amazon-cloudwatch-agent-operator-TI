@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
 
-	"github.com/open-telemetry/opentelemetry-operator/internal/config"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/config"
 )
 
 var (
