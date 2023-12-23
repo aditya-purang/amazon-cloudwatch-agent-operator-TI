@@ -6,15 +6,15 @@ plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: opentelemetry-operator
-repo: github.com/open-telemetry/opentelemetry-operator
+repo: github.com/aws/amazon-cloudwatch-agent-operator
 resources:
 - api:
     crdVersion: v1
     namespaced: true
   controller: true
   domain: opentelemetry.io
-  kind: OpenTelemetryCollector
-  path: github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1
+  kind: AmazonCloudWatchAgent
+  path: github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1
   version: v1alpha1
   webhooks:
     defaulting: true
@@ -25,7 +25,7 @@ resources:
     namespaced: true
   domain: opentelemetry.io
   kind: Instrumentation
-  path: github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1
+  path: github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1
   version: v1alpha1
   webhooks:
     defaulting: true

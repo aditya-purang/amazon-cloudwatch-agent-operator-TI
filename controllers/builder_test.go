@@ -25,9 +25,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
-	"github.com/open-telemetry/opentelemetry-operator/internal/config"
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/config"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests"
 )
 
 var (
@@ -53,7 +53,7 @@ service:
 `
 	one := int32(1)
 	type args struct {
-		instance v1alpha1.OpenTelemetryCollector
+		instance v1alpha1.AmazonCloudWatchAgent
 	}
 	tests := []struct {
 		name    string
@@ -64,12 +64,12 @@ service:
 		{
 			name: "base case",
 			args: args{
-				instance: v1alpha1.OpenTelemetryCollector{
+				instance: v1alpha1.AmazonCloudWatchAgent{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test",
 						Namespace: "test",
 					},
-					Spec: v1alpha1.OpenTelemetryCollectorSpec{
+					Spec: v1alpha1.AmazonCloudWatchAgentSpec{
 						Replicas: &one,
 						Mode:     "deployment",
 						Image:    "test",
@@ -300,12 +300,12 @@ service:
 		{
 			name: "ingress",
 			args: args{
-				instance: v1alpha1.OpenTelemetryCollector{
+				instance: v1alpha1.AmazonCloudWatchAgent{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test",
 						Namespace: "test",
 					},
-					Spec: v1alpha1.OpenTelemetryCollectorSpec{
+					Spec: v1alpha1.AmazonCloudWatchAgentSpec{
 						Replicas: &one,
 						Mode:     "deployment",
 						Image:    "test",

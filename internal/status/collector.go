@@ -23,16 +23,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests/collector"
-	"github.com/open-telemetry/opentelemetry-operator/internal/naming"
-	"github.com/open-telemetry/opentelemetry-operator/internal/version"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests/collector"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/naming"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/version"
 )
 
-func UpdateCollectorStatus(ctx context.Context, cli client.Client, changed *v1alpha1.OpenTelemetryCollector) error {
+func UpdateCollectorStatus(ctx context.Context, cli client.Client, changed *v1alpha1.AmazonCloudWatchAgent) error {
 	if changed.Status.Version == "" {
 		// a version is not set, otherwise let the upgrade mechanism take care of it!
-		changed.Status.Version = version.OpenTelemetryCollector()
+		changed.Status.Version = version.AmazonCloudWatchAgent()
 	}
 	mode := changed.Spec.Mode
 	if mode != v1alpha1.ModeDeployment && mode != v1alpha1.ModeStatefulSet {

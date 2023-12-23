@@ -25,9 +25,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
-	"github.com/open-telemetry/opentelemetry-operator/internal/version"
-	"github.com/open-telemetry/opentelemetry-operator/pkg/collector/upgrade"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/version"
+	"github.com/aws/amazon-cloudwatch-agent-operator/pkg/collector/upgrade"
 )
 
 var logger = logf.Log.WithName("unit-tests")
@@ -36,7 +36,7 @@ func TestShouldUpgradeAllToLatestBasedOnUpgradeStrategy(t *testing.T) {
 	const beginV = "0.0.1" // this is the first version we have an upgrade function
 
 	currentV := version.Get()
-	currentV.OpenTelemetryCollector = upgrade.Latest.String()
+	currentV.AmazonCloudWatchAgent = upgrade.Latest.String()
 
 	for _, tt := range []struct {
 		strategy  v1alpha1.UpgradeStrategy
@@ -57,7 +57,7 @@ func TestShouldUpgradeAllToLatestBasedOnUpgradeStrategy(t *testing.T) {
 			require.NoError(t, err)
 
 			// sanity check
-			persisted := &v1alpha1.OpenTelemetryCollector{}
+			persisted := &v1alpha1.AmazonCloudWatchAgent{}
 			err = k8sClient.Get(context.Background(), nsn, persisted)
 			require.NoError(t, err)
 			require.Equal(t, beginV, persisted.Status.Version)
@@ -99,7 +99,7 @@ func TestUpgradeUpToLatestKnownVersion(t *testing.T) {
 			existing.Status.Version = tt.v
 
 			currentV := version.Get()
-			currentV.OpenTelemetryCollector = tt.expectedV
+			currentV.AmazonCloudWatchAgent = tt.expectedV
 			up := &upgrade.VersionUpgrade{
 				Log:      logger,
 				Version:  currentV,
@@ -137,7 +137,7 @@ func TestVersionsShouldNotBeChanged(t *testing.T) {
 			existing.Status.Version = tt.v
 
 			currentV := version.Get()
-			currentV.OpenTelemetryCollector = upgrade.Latest.String()
+			currentV.AmazonCloudWatchAgent = upgrade.Latest.String()
 
 			up := &upgrade.VersionUpgrade{
 				Log:      logger,
@@ -160,9 +160,9 @@ func TestVersionsShouldNotBeChanged(t *testing.T) {
 	}
 }
 
-func makeOtelcol(nsn types.NamespacedName, managementState v1alpha1.ManagementStateType) v1alpha1.OpenTelemetryCollector {
-	return v1alpha1.OpenTelemetryCollector{
-		Spec: v1alpha1.OpenTelemetryCollectorSpec{
+func makeOtelcol(nsn types.NamespacedName, managementState v1alpha1.ManagementStateType) v1alpha1.AmazonCloudWatchAgent {
+	return v1alpha1.AmazonCloudWatchAgent{
+		Spec: v1alpha1.AmazonCloudWatchAgentSpec{
 			ManagementState: managementState,
 		},
 		ObjectMeta: metav1.ObjectMeta{

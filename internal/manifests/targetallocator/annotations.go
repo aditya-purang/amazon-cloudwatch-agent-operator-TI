@@ -20,13 +20,13 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
 )
 
 const configMapHashAnnotationKey = "opentelemetry-targetallocator-config/hash"
 
 // Annotations returns the annotations for the TargetAllocator Pod.
-func Annotations(instance v1alpha1.OpenTelemetryCollector, configMap *v1.ConfigMap) map[string]string {
+func Annotations(instance v1alpha1.AmazonCloudWatchAgent, configMap *v1.ConfigMap) map[string]string {
 	// Make a copy of PodAnnotations to be safe
 	annotations := make(map[string]string, len(instance.Spec.PodAnnotations))
 	for key, value := range instance.Spec.PodAnnotations {

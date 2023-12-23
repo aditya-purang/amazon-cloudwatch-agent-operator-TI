@@ -9,7 +9,7 @@ linters-settings:
   goheader:
     template-path: header.txt
   goimports:
-    local-prefixes: github.com/open-telemetry/opentelemetry-operator
+    local-prefixes: github.com/aws/amazon-cloudwatch-agent-operator
   maligned:
     suggest-new: true
   misspell:

@@ -20,13 +20,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
-	. "github.com/open-telemetry/opentelemetry-operator/internal/manifests/collector"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
+	. "github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests/collector"
 )
 
 func TestServiceAccountNewDefault(t *testing.T) {
 	// prepare
-	otelcol := v1alpha1.OpenTelemetryCollector{
+	otelcol := v1alpha1.AmazonCloudWatchAgent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my-instance",
 		},
@@ -41,11 +41,11 @@ func TestServiceAccountNewDefault(t *testing.T) {
 
 func TestServiceAccountOverride(t *testing.T) {
 	// prepare
-	otelcol := v1alpha1.OpenTelemetryCollector{
+	otelcol := v1alpha1.AmazonCloudWatchAgent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my-instance",
 		},
-		Spec: v1alpha1.OpenTelemetryCollectorSpec{
+		Spec: v1alpha1.AmazonCloudWatchAgentSpec{
 			ServiceAccount: "my-special-sa",
 		},
 	}

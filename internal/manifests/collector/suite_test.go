@@ -25,9 +25,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
-	"github.com/open-telemetry/opentelemetry-operator/internal/config"
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/config"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests"
 )
 
 var (
@@ -52,7 +52,7 @@ func paramsWithMode(mode v1alpha1.Mode) manifests.Params {
 	}
 	return manifests.Params{
 		Config: config.New(config.WithCollectorImage(defaultCollectorImage), config.WithTargetAllocatorImage(defaultTaAllocationImage)),
-		OtelCol: v1alpha1.OpenTelemetryCollector{
+		OtelCol: v1alpha1.AmazonCloudWatchAgent{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "opentelemetry.io",
 				APIVersion: "v1",
@@ -62,8 +62,8 @@ func paramsWithMode(mode v1alpha1.Mode) manifests.Params {
 				Namespace: "default",
 				UID:       instanceUID,
 			},
-			Spec: v1alpha1.OpenTelemetryCollectorSpec{
-				Image: "ghcr.io/open-telemetry/opentelemetry-operator/opentelemetry-operator:0.47.0",
+			Spec: v1alpha1.AmazonCloudWatchAgentSpec{
+				Image: "ghcr.io/aws/amazon-cloudwatch-agent-operator/opentelemetry-operator:0.47.0",
 				Ports: []v1.ServicePort{{
 					Name: "web",
 					Port: 80,
@@ -101,7 +101,7 @@ func newParams(taContainerImage string, file string) (manifests.Params, error) {
 
 	return manifests.Params{
 		Config: cfg,
-		OtelCol: v1alpha1.OpenTelemetryCollector{
+		OtelCol: v1alpha1.AmazonCloudWatchAgent{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "opentelemetry.io",
 				APIVersion: "v1",
@@ -111,7 +111,7 @@ func newParams(taContainerImage string, file string) (manifests.Params, error) {
 				Namespace: "default",
 				UID:       instanceUID,
 			},
-			Spec: v1alpha1.OpenTelemetryCollectorSpec{
+			Spec: v1alpha1.AmazonCloudWatchAgentSpec{
 				Mode: v1alpha1.ModeStatefulSet,
 				Ports: []v1.ServicePort{{
 					Name: "web",

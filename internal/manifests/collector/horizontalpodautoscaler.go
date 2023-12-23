@@ -20,9 +20,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests"
-	"github.com/open-telemetry/opentelemetry-operator/internal/naming"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/naming"
 )
 
 func HorizontalPodAutoscaler(params manifests.Params) client.Object {
@@ -91,8 +91,8 @@ func HorizontalPodAutoscaler(params manifests.Params) client.Object {
 		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
 			ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
 				APIVersion: v1alpha1.GroupVersion.String(),
-				Kind:       "OpenTelemetryCollector",
-				Name:       naming.OpenTelemetryCollector(params.OtelCol.Name),
+				Kind:       "AmazonCloudWatchAgent",
+				Name:       naming.AmazonCloudWatchAgent(params.OtelCol.Name),
 			},
 			MinReplicas: params.OtelCol.Spec.Autoscaler.MinReplicas,
 			MaxReplicas: *params.OtelCol.Spec.Autoscaler.MaxReplicas,

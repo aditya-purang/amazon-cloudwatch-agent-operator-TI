@@ -22,10 +22,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests"
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests/collector/adapters"
-	"github.com/open-telemetry/opentelemetry-operator/internal/naming"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests/collector/adapters"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/naming"
 )
 
 // headless label is to differentiate the headless service from the clusterIP service.
@@ -61,7 +61,7 @@ func MonitoringService(params manifests.Params) *corev1.Service {
 	labels := Labels(params.OtelCol, name, []string{})
 
 	c, err := adapters.ConfigFromString(params.OtelCol.Spec.Config)
-	// TODO: Update this to properly return an error https://github.com/open-telemetry/opentelemetry-operator/issues/1972
+	// TODO: Update this to properly return an error https://github.com/aws/amazon-cloudwatch-agent-operator/issues/1972
 	if err != nil {
 		params.Log.Error(err, "couldn't extract the configuration")
 		return nil

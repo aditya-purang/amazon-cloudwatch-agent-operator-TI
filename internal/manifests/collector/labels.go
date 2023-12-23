@@ -18,8 +18,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
-	"github.com/open-telemetry/opentelemetry-operator/internal/naming"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/naming"
 )
 
 func isFilteredLabel(label string, filterLabels []string) bool {
@@ -31,8 +31,8 @@ func isFilteredLabel(label string, filterLabels []string) bool {
 	return false
 }
 
-// Labels return the common labels to all objects that are part of a managed OpenTelemetryCollector.
-func Labels(instance v1alpha1.OpenTelemetryCollector, name string, filterLabels []string) map[string]string {
+// Labels return the common labels to all objects that are part of a managed AmazonCloudWatchAgent.
+func Labels(instance v1alpha1.AmazonCloudWatchAgent, name string, filterLabels []string) map[string]string {
 	// new map every time, so that we don't touch the instance's label
 	base := map[string]string{}
 	if nil != instance.Labels {
@@ -62,10 +62,10 @@ func Labels(instance v1alpha1.OpenTelemetryCollector, name string, filterLabels 
 	return base
 }
 
-// SelectorLabels return the common labels to all objects that are part of a managed OpenTelemetryCollector to use as selector.
+// SelectorLabels return the common labels to all objects that are part of a managed AmazonCloudWatchAgent to use as selector.
 // Selector labels are immutable for Deployment, StatefulSet and DaemonSet, therefore, no labels in selector should be
 // expected to be modified for the lifetime of the object.
-func SelectorLabels(instance v1alpha1.OpenTelemetryCollector) map[string]string {
+func SelectorLabels(instance v1alpha1.AmazonCloudWatchAgent) map[string]string {
 	return map[string]string{
 		"app.kubernetes.io/managed-by": "opentelemetry-operator",
 		"app.kubernetes.io/instance":   naming.Truncate("%s.%s", 63, instance.Namespace, instance.Name),

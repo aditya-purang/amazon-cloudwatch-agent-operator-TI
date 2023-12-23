@@ -24,8 +24,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	corev1 "k8s.io/api/core/v1"
 
-	exporterParser "github.com/open-telemetry/opentelemetry-operator/internal/manifests/collector/parser/exporter"
-	receiverParser "github.com/open-telemetry/opentelemetry-operator/internal/manifests/collector/parser/receiver"
+	exporterParser "github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests/collector/parser/exporter"
+	receiverParser "github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests/collector/parser/receiver"
 )
 
 var (

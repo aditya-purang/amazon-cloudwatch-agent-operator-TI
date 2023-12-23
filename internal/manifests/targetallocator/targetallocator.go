@@ -17,7 +17,7 @@ package targetallocator
 import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests"
 )
 
 // Build creates the manifest for the TargetAllocator resource.

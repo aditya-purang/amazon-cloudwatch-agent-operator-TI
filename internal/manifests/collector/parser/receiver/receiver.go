@@ -26,7 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/open-telemetry/opentelemetry-operator/internal/naming"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/naming"
 )
 
 // ReceiverParser is an interface that should be implemented by all receiver parsers.

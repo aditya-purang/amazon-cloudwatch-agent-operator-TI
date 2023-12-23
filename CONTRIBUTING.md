@@ -13,7 +13,7 @@ We gratefully welcome improvements to documentation as well as to code.
 It is recommended to follow the ["GitHub Workflow"](https://guides.github.com/introduction/flow/). When using [GitHub's CLI](https://github.com/cli/cli), here's how it typically looks like:
 
 ```bash
-gh repo fork github.com/open-telemetry/opentelemetry-operator
+gh repo fork github.com/aws/amazon-cloudwatch-agent-operator
 git checkout -b your-feature-branch
 # do your changes
 git commit -sam "Add feature X"
@@ -110,7 +110,7 @@ The tests are located under `tests/e2e` and are written to be used with `kuttl`.
 ### OpenShift End to End tests
 To run the end-to-end tests written for OpenShift, you'll need a OpenShift cluster. 
 
-To install the OpenTelemetry operator, please follow the instructions in  [Operator Lifecycle Manager (OLM)](https://github.com/open-telemetry/opentelemetry-operator/blob/main/CONTRIBUTING.md#operator-lifecycle-manager-olm)
+To install the OpenTelemetry operator, please follow the instructions in  [Operator Lifecycle Manager (OLM)](https://github.com/aws/amazon-cloudwatch-agent-operator/blob/main/CONTRIBUTING.md#operator-lifecycle-manager-olm)
 
 Once the operator is installed, the tests can be executed using `make e2e-openshift`, which will call to the `e2e-openshift` target. Note that `kind` is disabled for the TestSuite as the requirement is to use an OpenShift cluster for these test cases. 
 
@@ -124,7 +124,7 @@ make undeploy
 
 ## Project Structure
 
-For a general overview of the directories from this operator and what to expect in each one of them, please check out the [official GoDoc](https://godoc.org/github.com/open-telemetry/opentelemetry-operator) or the [locally-hosted GoDoc](http://localhost:6060/pkg/github.com/open-telemetry/opentelemetry-operator/)
+For a general overview of the directories from this operator and what to expect in each one of them, please check out the [official GoDoc](https://godoc.org/github.com/aws/amazon-cloudwatch-agent-operator) or the [locally-hosted GoDoc](http://localhost:6060/pkg/github.com/aws/amazon-cloudwatch-agent-operator/)
 
 ## Contributing
 

@@ -20,8 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
-	. "github.com/open-telemetry/opentelemetry-operator/internal/manifests/collector"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
+	. "github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests/collector"
 )
 
 const (
@@ -31,13 +31,13 @@ const (
 
 func TestLabelsCommonSet(t *testing.T) {
 	// prepare
-	otelcol := v1alpha1.OpenTelemetryCollector{
+	otelcol := v1alpha1.AmazonCloudWatchAgent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      collectorName,
 			Namespace: collectorNamespace,
 		},
-		Spec: v1alpha1.OpenTelemetryCollectorSpec{
-			Image: "ghcr.io/open-telemetry/opentelemetry-operator/opentelemetry-operator:0.47.0",
+		Spec: v1alpha1.AmazonCloudWatchAgentSpec{
+			Image: "ghcr.io/aws/amazon-cloudwatch-agent-operator/opentelemetry-operator:0.47.0",
 		},
 	}
 
@@ -52,13 +52,13 @@ func TestLabelsCommonSet(t *testing.T) {
 
 func TestLabelsTagUnset(t *testing.T) {
 	// prepare
-	otelcol := v1alpha1.OpenTelemetryCollector{
+	otelcol := v1alpha1.AmazonCloudWatchAgent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      collectorName,
 			Namespace: collectorNamespace,
 		},
-		Spec: v1alpha1.OpenTelemetryCollectorSpec{
-			Image: "ghcr.io/open-telemetry/opentelemetry-operator/opentelemetry-operator",
+		Spec: v1alpha1.AmazonCloudWatchAgentSpec{
+			Image: "ghcr.io/aws/amazon-cloudwatch-agent-operator/opentelemetry-operator",
 		},
 	}
 
@@ -73,7 +73,7 @@ func TestLabelsTagUnset(t *testing.T) {
 
 func TestLabelsPropagateDown(t *testing.T) {
 	// prepare
-	otelcol := v1alpha1.OpenTelemetryCollector{
+	otelcol := v1alpha1.AmazonCloudWatchAgent{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				"myapp":                  "mycomponent",
@@ -92,7 +92,7 @@ func TestLabelsPropagateDown(t *testing.T) {
 }
 
 func TestLabelsFilter(t *testing.T) {
-	otelcol := v1alpha1.OpenTelemetryCollector{
+	otelcol := v1alpha1.AmazonCloudWatchAgent{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{"test.bar.io": "foo", "test.foo.io": "bar"},
 		},
@@ -115,7 +115,7 @@ func TestSelectorLabels(t *testing.T) {
 		"app.kubernetes.io/managed-by": "opentelemetry-operator",
 		"app.kubernetes.io/part-of":    "opentelemetry",
 	}
-	otelcol := v1alpha1.OpenTelemetryCollector{
+	otelcol := v1alpha1.AmazonCloudWatchAgent{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-opentelemetry-collector", Namespace: "my-namespace"},
 	}
 

@@ -22,12 +22,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
-	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/aws/amazon-cloudwatch-agent-operator/internal/config"
@@ -40,7 +37,6 @@ var (
 func TestOTELColDefaultingWebhook(t *testing.T) {
 	one := int32(1)
 	five := int32(5)
-	defaultCPUTarget := int32(90)
 
 	if err := AddToScheme(testScheme); err != nil {
 		fmt.Printf("failed to register scheme: %v", err)
@@ -49,180 +45,87 @@ func TestOTELColDefaultingWebhook(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		otelcol  OpenTelemetryCollector
-		expected OpenTelemetryCollector
+		otelcol  AmazonCloudWatchAgent
+		expected AmazonCloudWatchAgent
 	}{
 		{
 			name:    "all fields default",
-			otelcol: OpenTelemetryCollector{},
-			expected: OpenTelemetryCollector{
+			otelcol: AmazonCloudWatchAgent{},
+			expected: AmazonCloudWatchAgent{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app.kubernetes.io/managed-by": "opentelemetry-operator",
+						"app.kubernetes.io/managed-by": "amazon-cloudwatch-agent-operator",
 					},
 				},
-				Spec: OpenTelemetryCollectorSpec{
+				Spec: AmazonCloudWatchAgentSpec{
 					Mode:            ModeDeployment,
 					Replicas:        &one,
 					UpgradeStrategy: UpgradeStrategyAutomatic,
-					ManagementState: ManagementStateManaged,
-					PodDisruptionBudget: &PodDisruptionBudgetSpec{
-						MaxUnavailable: &intstr.IntOrString{
-							Type:   intstr.Int,
-							IntVal: 1,
-						},
-					},
 				},
 			},
 		},
 		{
 			name: "provided values in spec",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
+			otelcol: AmazonCloudWatchAgent{
+				Spec: AmazonCloudWatchAgentSpec{
 					Mode:            ModeSidecar,
 					Replicas:        &five,
 					UpgradeStrategy: "adhoc",
 				},
 			},
-			expected: OpenTelemetryCollector{
+			expected: AmazonCloudWatchAgent{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app.kubernetes.io/managed-by": "opentelemetry-operator",
+						"app.kubernetes.io/managed-by": "amazon-cloudwatch-agent-operator",
 					},
 				},
-				Spec: OpenTelemetryCollectorSpec{
+				Spec: AmazonCloudWatchAgentSpec{
 					Mode:            ModeSidecar,
 					Replicas:        &five,
 					UpgradeStrategy: "adhoc",
-					ManagementState: ManagementStateManaged,
-					PodDisruptionBudget: &PodDisruptionBudgetSpec{
-						MaxUnavailable: &intstr.IntOrString{
-							Type:   intstr.Int,
-							IntVal: 1,
-						},
-					},
 				},
 			},
 		},
 		{
 			name: "doesn't override unmanaged",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					ManagementState: ManagementStateUnmanaged,
+			otelcol: AmazonCloudWatchAgent{
+				Spec: AmazonCloudWatchAgentSpec{
 					Mode:            ModeSidecar,
 					Replicas:        &five,
 					UpgradeStrategy: "adhoc",
 				},
 			},
-			expected: OpenTelemetryCollector{
+			expected: AmazonCloudWatchAgent{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app.kubernetes.io/managed-by": "opentelemetry-operator",
+						"app.kubernetes.io/managed-by": "amazon-cloudwatch-agent-operator",
 					},
 				},
-				Spec: OpenTelemetryCollectorSpec{
+				Spec: AmazonCloudWatchAgentSpec{
 					Mode:            ModeSidecar,
 					Replicas:        &five,
 					UpgradeStrategy: "adhoc",
-					ManagementState: ManagementStateUnmanaged,
-					PodDisruptionBudget: &PodDisruptionBudgetSpec{
-						MaxUnavailable: &intstr.IntOrString{
-							Type:   intstr.Int,
-							IntVal: 1,
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Setting Autoscaler MaxReplicas",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					Autoscaler: &AutoscalerSpec{
-						MaxReplicas: &five,
-						MinReplicas: &one,
-					},
-				},
-			},
-			expected: OpenTelemetryCollector{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app.kubernetes.io/managed-by": "opentelemetry-operator",
-					},
-				},
-				Spec: OpenTelemetryCollectorSpec{
-					Mode:            ModeDeployment,
-					Replicas:        &one,
-					UpgradeStrategy: UpgradeStrategyAutomatic,
-					ManagementState: ManagementStateManaged,
-					Autoscaler: &AutoscalerSpec{
-						TargetCPUUtilization: &defaultCPUTarget,
-						MaxReplicas:          &five,
-						MinReplicas:          &one,
-					},
-					PodDisruptionBudget: &PodDisruptionBudgetSpec{
-						MaxUnavailable: &intstr.IntOrString{
-							Type:   intstr.Int,
-							IntVal: 1,
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "MaxReplicas but no Autoscale",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					MaxReplicas: &five,
-				},
-			},
-			expected: OpenTelemetryCollector{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app.kubernetes.io/managed-by": "opentelemetry-operator",
-					},
-				},
-				Spec: OpenTelemetryCollectorSpec{
-					Mode:            ModeDeployment,
-					Replicas:        &one,
-					UpgradeStrategy: UpgradeStrategyAutomatic,
-					ManagementState: ManagementStateManaged,
-					Autoscaler: &AutoscalerSpec{
-						TargetCPUUtilization: &defaultCPUTarget,
-						// webhook Default adds MaxReplicas to Autoscaler because
-						// OpenTelemetryCollector.Spec.MaxReplicas is deprecated.
-						MaxReplicas: &five,
-						MinReplicas: &one,
-					},
-					MaxReplicas: &five,
-					PodDisruptionBudget: &PodDisruptionBudgetSpec{
-						MaxUnavailable: &intstr.IntOrString{
-							Type:   intstr.Int,
-							IntVal: 1,
-						},
-					},
 				},
 			},
 		},
 		{
 			name: "Missing route termination",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
+			otelcol: AmazonCloudWatchAgent{
+				Spec: AmazonCloudWatchAgentSpec{
 					Mode: ModeDeployment,
 					Ingress: Ingress{
 						Type: IngressTypeRoute,
 					},
 				},
 			},
-			expected: OpenTelemetryCollector{
+			expected: AmazonCloudWatchAgent{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app.kubernetes.io/managed-by": "opentelemetry-operator",
+						"app.kubernetes.io/managed-by": "amazon-cloudwatch-agent-operator",
 					},
 				},
-				Spec: OpenTelemetryCollectorSpec{
-					Mode:            ModeDeployment,
-					ManagementState: ManagementStateManaged,
+				Spec: AmazonCloudWatchAgentSpec{
+					Mode: ModeDeployment,
 					Ingress: Ingress{
 						Type: IngressTypeRoute,
 						Route: OpenShiftRoute{
@@ -231,45 +134,6 @@ func TestOTELColDefaultingWebhook(t *testing.T) {
 					},
 					Replicas:        &one,
 					UpgradeStrategy: UpgradeStrategyAutomatic,
-					PodDisruptionBudget: &PodDisruptionBudgetSpec{
-						MaxUnavailable: &intstr.IntOrString{
-							Type:   intstr.Int,
-							IntVal: 1,
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Defined PDB",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					Mode: ModeDeployment,
-					PodDisruptionBudget: &PodDisruptionBudgetSpec{
-						MinAvailable: &intstr.IntOrString{
-							Type:   intstr.String,
-							StrVal: "10%",
-						},
-					},
-				},
-			},
-			expected: OpenTelemetryCollector{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app.kubernetes.io/managed-by": "opentelemetry-operator",
-					},
-				},
-				Spec: OpenTelemetryCollectorSpec{
-					Mode:            ModeDeployment,
-					Replicas:        &one,
-					UpgradeStrategy: UpgradeStrategyAutomatic,
-					ManagementState: ManagementStateManaged,
-					PodDisruptionBudget: &PodDisruptionBudgetSpec{
-						MinAvailable: &intstr.IntOrString{
-							Type:   intstr.String,
-							StrVal: "10%",
-						},
-					},
 				},
 			},
 		},
@@ -297,35 +161,25 @@ func TestOTELColDefaultingWebhook(t *testing.T) {
 // deprecated and moved to .Spec.Autoscaler. Fine to use these fields to test that old CRD is
 // still supported but should eventually be updated.
 func TestOTELColValidatingWebhook(t *testing.T) {
-	minusOne := int32(-1)
-	zero := int32(0)
-	zero64 := int64(0)
-	one := int32(1)
 	three := int32(3)
-	five := int32(5)
 
 	tests := []struct { //nolint:govet
 		name             string
-		otelcol          OpenTelemetryCollector
+		otelcol          AmazonCloudWatchAgent
 		expectedErr      string
 		expectedWarnings []string
 	}{
 		{
 			name:    "valid empty spec",
-			otelcol: OpenTelemetryCollector{},
+			otelcol: AmazonCloudWatchAgent{},
 		},
 		{
 			name: "valid full spec",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
+			otelcol: AmazonCloudWatchAgent{
+				Spec: AmazonCloudWatchAgentSpec{
 					Mode:            ModeStatefulSet,
-					MinReplicas:     &one,
 					Replicas:        &three,
-					MaxReplicas:     &five,
 					UpgradeStrategy: "adhoc",
-					TargetAllocator: OpenTelemetryTargetAllocator{
-						Enabled: true,
-					},
 					Config: `receivers:
   examplereceiver:
     endpoint: "0.0.0.0:12345"
@@ -352,24 +206,13 @@ func TestOTELColValidatingWebhook(t *testing.T) {
 							Protocol: v1.ProtocolUDP,
 						},
 					},
-					Autoscaler: &AutoscalerSpec{
-						Behavior: &autoscalingv2.HorizontalPodAutoscalerBehavior{
-							ScaleDown: &autoscalingv2.HPAScalingRules{
-								StabilizationWindowSeconds: &three,
-							},
-							ScaleUp: &autoscalingv2.HPAScalingRules{
-								StabilizationWindowSeconds: &five,
-							},
-						},
-						TargetCPUUtilization: &five,
-					},
 				},
 			},
 		},
 		{
 			name: "invalid mode with volume claim templates",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
+			otelcol: AmazonCloudWatchAgent{
+				Spec: AmazonCloudWatchAgentSpec{
 					Mode:                 ModeSidecar,
 					VolumeClaimTemplates: []v1.PersistentVolumeClaim{{}, {}},
 				},
@@ -378,8 +221,8 @@ func TestOTELColValidatingWebhook(t *testing.T) {
 		},
 		{
 			name: "invalid mode with tolerations",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
+			otelcol: AmazonCloudWatchAgent{
+				Spec: AmazonCloudWatchAgentSpec{
 					Mode:        ModeSidecar,
 					Tolerations: []v1.Toleration{{}, {}},
 				},
@@ -387,33 +230,9 @@ func TestOTELColValidatingWebhook(t *testing.T) {
 			expectedErr: "does not support the attribute 'tolerations'",
 		},
 		{
-			name: "invalid mode with target allocator",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					Mode: ModeDeployment,
-					TargetAllocator: OpenTelemetryTargetAllocator{
-						Enabled: true,
-					},
-				},
-			},
-			expectedErr: "does not support the target allocation deployment",
-		},
-		{
-			name: "invalid target allocator config",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					Mode: ModeStatefulSet,
-					TargetAllocator: OpenTelemetryTargetAllocator{
-						Enabled: true,
-					},
-				},
-			},
-			expectedErr: "the OpenTelemetry Spec Prometheus configuration is incorrect",
-		},
-		{
 			name: "invalid port name",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
+			otelcol: AmazonCloudWatchAgent{
+				Spec: AmazonCloudWatchAgentSpec{
 					Ports: []v1.ServicePort{
 						{
 							// this port name contains a non alphanumeric character, which is invalid.
@@ -428,8 +247,8 @@ func TestOTELColValidatingWebhook(t *testing.T) {
 		},
 		{
 			name: "invalid port name, too long",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
+			otelcol: AmazonCloudWatchAgent{
+				Spec: AmazonCloudWatchAgentSpec{
 					Ports: []v1.ServicePort{
 						{
 							Name: "aaaabbbbccccdddd", // len: 16, too long
@@ -442,8 +261,8 @@ func TestOTELColValidatingWebhook(t *testing.T) {
 		},
 		{
 			name: "invalid port num",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
+			otelcol: AmazonCloudWatchAgent{
+				Spec: AmazonCloudWatchAgentSpec{
 					Ports: []v1.ServicePort{
 						{
 							Name: "aaaabbbbccccddd", // len: 15
@@ -455,180 +274,9 @@ func TestOTELColValidatingWebhook(t *testing.T) {
 			expectedErr: "the OpenTelemetry Spec Ports configuration is incorrect",
 		},
 		{
-			name: "invalid max replicas",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					MaxReplicas: &zero,
-				},
-			},
-			expectedErr:      "maxReplicas should be defined and one or more",
-			expectedWarnings: []string{"MaxReplicas is deprecated"},
-		},
-		{
-			name: "invalid replicas, greater than max",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					MaxReplicas: &three,
-					Replicas:    &five,
-				},
-			},
-			expectedErr:      "replicas must not be greater than maxReplicas",
-			expectedWarnings: []string{"MaxReplicas is deprecated"},
-		},
-		{
-			name: "invalid min replicas, greater than max",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					MaxReplicas: &three,
-					MinReplicas: &five,
-				},
-			},
-			expectedErr:      "minReplicas must not be greater than maxReplicas",
-			expectedWarnings: []string{"MaxReplicas is deprecated", "MinReplicas is deprecated"},
-		},
-		{
-			name: "invalid min replicas, lesser than 1",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					MaxReplicas: &three,
-					MinReplicas: &zero,
-				},
-			},
-			expectedErr:      "minReplicas should be one or more",
-			expectedWarnings: []string{"MaxReplicas is deprecated", "MinReplicas is deprecated"},
-		},
-		{
-			name: "invalid autoscaler scale down",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					MaxReplicas: &three,
-					Autoscaler: &AutoscalerSpec{
-						Behavior: &autoscalingv2.HorizontalPodAutoscalerBehavior{
-							ScaleDown: &autoscalingv2.HPAScalingRules{
-								StabilizationWindowSeconds: &zero,
-							},
-						},
-					},
-				},
-			},
-			expectedErr:      "scaleDown should be one or more",
-			expectedWarnings: []string{"MaxReplicas is deprecated"},
-		},
-		{
-			name: "invalid autoscaler scale up",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					MaxReplicas: &three,
-					Autoscaler: &AutoscalerSpec{
-						Behavior: &autoscalingv2.HorizontalPodAutoscalerBehavior{
-							ScaleUp: &autoscalingv2.HPAScalingRules{
-								StabilizationWindowSeconds: &zero,
-							},
-						},
-					},
-				},
-			},
-			expectedErr:      "scaleUp should be one or more",
-			expectedWarnings: []string{"MaxReplicas is deprecated"},
-		},
-		{
-			name: "invalid autoscaler target cpu utilization",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					MaxReplicas: &three,
-					Autoscaler: &AutoscalerSpec{
-						TargetCPUUtilization: &zero,
-					},
-				},
-			},
-			expectedErr:      "targetCPUUtilization should be greater than 0 and less than 100",
-			expectedWarnings: []string{"MaxReplicas is deprecated"},
-		},
-		{
-			name: "autoscaler minReplicas is less than maxReplicas",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					Autoscaler: &AutoscalerSpec{
-						MaxReplicas: &one,
-						MinReplicas: &five,
-					},
-				},
-			},
-			expectedErr: "the OpenTelemetry Spec autoscale configuration is incorrect, minReplicas must not be greater than maxReplicas",
-		},
-		{
-			name: "invalid autoscaler metric type",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					MaxReplicas: &three,
-					Autoscaler: &AutoscalerSpec{
-						Metrics: []MetricSpec{
-							{
-								Type: autoscalingv2.ResourceMetricSourceType,
-							},
-						},
-					},
-				},
-			},
-			expectedErr:      "the OpenTelemetry Spec autoscale configuration is incorrect, metric type unsupported. Expected metric of source type Pod",
-			expectedWarnings: []string{"MaxReplicas is deprecated"},
-		},
-		{
-			name: "invalid pod metric average value",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					MaxReplicas: &three,
-					Autoscaler: &AutoscalerSpec{
-						Metrics: []MetricSpec{
-							{
-								Type: autoscalingv2.PodsMetricSourceType,
-								Pods: &autoscalingv2.PodsMetricSource{
-									Metric: autoscalingv2.MetricIdentifier{
-										Name: "custom1",
-									},
-									Target: autoscalingv2.MetricTarget{
-										Type:         autoscalingv2.AverageValueMetricType,
-										AverageValue: resource.NewQuantity(int64(0), resource.DecimalSI),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			expectedErr:      "the OpenTelemetry Spec autoscale configuration is incorrect, average value should be greater than 0",
-			expectedWarnings: []string{"MaxReplicas is deprecated"},
-		},
-		{
-			name: "utilization target is not valid with pod metrics",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					MaxReplicas: &three,
-					Autoscaler: &AutoscalerSpec{
-						Metrics: []MetricSpec{
-							{
-								Type: autoscalingv2.PodsMetricSourceType,
-								Pods: &autoscalingv2.PodsMetricSource{
-									Metric: autoscalingv2.MetricIdentifier{
-										Name: "custom1",
-									},
-									Target: autoscalingv2.MetricTarget{
-										Type:               autoscalingv2.UtilizationMetricType,
-										AverageUtilization: &one,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			expectedErr:      "the OpenTelemetry Spec autoscale configuration is incorrect, invalid pods target type",
-			expectedWarnings: []string{"MaxReplicas is deprecated"},
-		},
-		{
 			name: "invalid deployment mode incompabible with ingress settings",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
+			otelcol: AmazonCloudWatchAgent{
+				Spec: AmazonCloudWatchAgentSpec{
 					Mode: ModeSidecar,
 					Ingress: Ingress{
 						Type: IngressTypeNginx,
@@ -641,130 +289,13 @@ func TestOTELColValidatingWebhook(t *testing.T) {
 		},
 		{
 			name: "invalid mode with priorityClassName",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
+			otelcol: AmazonCloudWatchAgent{
+				Spec: AmazonCloudWatchAgentSpec{
 					Mode:              ModeSidecar,
 					PriorityClassName: "test-class",
 				},
 			},
 			expectedErr: "does not support the attribute 'priorityClassName'",
-		},
-		{
-			name: "invalid mode with affinity",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					Mode: ModeSidecar,
-					Affinity: &v1.Affinity{
-						NodeAffinity: &v1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
-								NodeSelectorTerms: []v1.NodeSelectorTerm{
-									{
-										MatchExpressions: []v1.NodeSelectorRequirement{
-											{
-												Key:      "node",
-												Operator: v1.NodeSelectorOpIn,
-												Values:   []string{"test-node"},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			expectedErr: "does not support the attribute 'affinity'",
-		},
-		{
-			name: "invalid InitialDelaySeconds",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					LivenessProbe: &Probe{
-						InitialDelaySeconds: &minusOne,
-					},
-				},
-			},
-			expectedErr: "the OpenTelemetry Spec LivenessProbe InitialDelaySeconds configuration is incorrect",
-		},
-		{
-			name: "invalid PeriodSeconds",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					LivenessProbe: &Probe{
-						PeriodSeconds: &zero,
-					},
-				},
-			},
-			expectedErr: "the OpenTelemetry Spec LivenessProbe PeriodSeconds configuration is incorrect",
-		},
-		{
-			name: "invalid TimeoutSeconds",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					LivenessProbe: &Probe{
-						TimeoutSeconds: &zero,
-					},
-				},
-			},
-			expectedErr: "the OpenTelemetry Spec LivenessProbe TimeoutSeconds configuration is incorrect",
-		},
-		{
-			name: "invalid SuccessThreshold",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					LivenessProbe: &Probe{
-						SuccessThreshold: &zero,
-					},
-				},
-			},
-			expectedErr: "the OpenTelemetry Spec LivenessProbe SuccessThreshold configuration is incorrect",
-		},
-		{
-			name: "invalid FailureThreshold",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					LivenessProbe: &Probe{
-						FailureThreshold: &zero,
-					},
-				},
-			},
-			expectedErr: "the OpenTelemetry Spec LivenessProbe FailureThreshold configuration is incorrect",
-		},
-		{
-			name: "invalid TerminationGracePeriodSeconds",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					LivenessProbe: &Probe{
-						TerminationGracePeriodSeconds: &zero64,
-					},
-				},
-			},
-			expectedErr: "the OpenTelemetry Spec LivenessProbe TerminationGracePeriodSeconds configuration is incorrect",
-		},
-		{
-			name: "invalid AdditionalContainers",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					Mode: ModeSidecar,
-					AdditionalContainers: []v1.Container{
-						{
-							Name: "test",
-						},
-					},
-				},
-			},
-			expectedErr: "the OpenTelemetry Collector mode is set to sidecar, which does not support the attribute 'AdditionalContainers'",
-		},
-		{
-			name: "missing ingress hostname for subdomain ruleType",
-			otelcol: OpenTelemetryCollector{
-				Spec: OpenTelemetryCollectorSpec{
-					Ingress: Ingress{
-						RuleType: IngressRuleTypeSubdomain,
-					},
-				},
-			},
-			expectedErr: "a valid Ingress hostname has to be defined for subdomain ruleType",
 		},
 	}
 

@@ -23,11 +23,11 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests"
-	"github.com/open-telemetry/opentelemetry-operator/internal/naming"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/naming"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
-	"github.com/open-telemetry/opentelemetry-operator/internal/config"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/config"
 )
 
 const testFileIngress = "testdata/ingress_testdata.yaml"
@@ -37,8 +37,8 @@ func TestDesiredIngresses(t *testing.T) {
 		params := manifests.Params{
 			Config: config.Config{},
 			Log:    logger,
-			OtelCol: v1alpha1.OpenTelemetryCollector{
-				Spec: v1alpha1.OpenTelemetryCollectorSpec{
+			OtelCol: v1alpha1.AmazonCloudWatchAgent{
+				Spec: v1alpha1.AmazonCloudWatchAgentSpec{
 					Ingress: v1alpha1.Ingress{
 						Type: v1alpha1.IngressType("unknown"),
 					},
@@ -54,8 +54,8 @@ func TestDesiredIngresses(t *testing.T) {
 		params := manifests.Params{
 			Config: config.Config{},
 			Log:    logger,
-			OtelCol: v1alpha1.OpenTelemetryCollector{
-				Spec: v1alpha1.OpenTelemetryCollectorSpec{
+			OtelCol: v1alpha1.AmazonCloudWatchAgent{
+				Spec: v1alpha1.AmazonCloudWatchAgentSpec{
 					Config: "!!!",
 					Ingress: v1alpha1.Ingress{
 						Type: v1alpha1.IngressTypeNginx,
@@ -72,8 +72,8 @@ func TestDesiredIngresses(t *testing.T) {
 		params := manifests.Params{
 			Config: config.Config{},
 			Log:    logger,
-			OtelCol: v1alpha1.OpenTelemetryCollector{
-				Spec: v1alpha1.OpenTelemetryCollectorSpec{
+			OtelCol: v1alpha1.AmazonCloudWatchAgent{
+				Spec: v1alpha1.AmazonCloudWatchAgentSpec{
 					Config: "---",
 					Ingress: v1alpha1.Ingress{
 						Type: v1alpha1.IngressTypeNginx,

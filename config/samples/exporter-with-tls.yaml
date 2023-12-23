@@ -11,7 +11,7 @@ metadata:
     "service.beta.openshift.io/inject-cabundle": "true"
 ---
 apiVersion: opentelemetry.io/v1alpha1
-kind: OpenTelemetryCollector
+kind: AmazonCloudWatchAgent
 metadata:
   name: opentelemetrycollector-sample
 spec:

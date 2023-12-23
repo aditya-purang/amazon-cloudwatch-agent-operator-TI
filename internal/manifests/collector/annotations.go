@@ -18,11 +18,11 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
 )
 
-// Annotations return the annotations for OpenTelemetryCollector pod.
-func Annotations(instance v1alpha1.OpenTelemetryCollector) map[string]string {
+// Annotations return the annotations for AmazonCloudWatchAgent pod.
+func Annotations(instance v1alpha1.AmazonCloudWatchAgent) map[string]string {
 	// new map every time, so that we don't touch the instance's annotations
 	annotations := map[string]string{}
 
@@ -43,8 +43,8 @@ func Annotations(instance v1alpha1.OpenTelemetryCollector) map[string]string {
 	return annotations
 }
 
-// PodAnnotations return the spec annotations for OpenTelemetryCollector pod.
-func PodAnnotations(instance v1alpha1.OpenTelemetryCollector) map[string]string {
+// PodAnnotations return the spec annotations for AmazonCloudWatchAgent pod.
+func PodAnnotations(instance v1alpha1.AmazonCloudWatchAgent) map[string]string {
 	// new map every time, so that we don't touch the instance's annotations
 	podAnnotations := map[string]string{}
 

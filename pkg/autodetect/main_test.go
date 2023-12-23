@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
-	"github.com/open-telemetry/opentelemetry-operator/pkg/autodetect"
+	"github.com/aws/amazon-cloudwatch-agent-operator/pkg/autodetect"
 )
 
 func TestDetectPlatformBasedOnAvailableAPIGroups(t *testing.T) {

@@ -33,12 +33,12 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	k8sreconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
-	"github.com/open-telemetry/opentelemetry-operator/controllers"
-	"github.com/open-telemetry/opentelemetry-operator/internal/config"
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests"
-	ta "github.com/open-telemetry/opentelemetry-operator/internal/manifests/targetallocator/adapters"
-	"github.com/open-telemetry/opentelemetry-operator/internal/naming"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
+	"github.com/aws/amazon-cloudwatch-agent-operator/controllers"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/config"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests"
+	ta "github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests/targetallocator/adapters"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/naming"
 )
 
 const (
@@ -60,7 +60,7 @@ var (
 	}
 )
 
-type check func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector)
+type check func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent)
 
 func newParamsAssertNoErr(t *testing.T, taContainerImage string, file string) manifests.Params {
 	p, err := newParams(taContainerImage, file)
@@ -71,7 +71,7 @@ func newParamsAssertNoErr(t *testing.T, taContainerImage string, file string) ma
 	return p
 }
 
-func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
+func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 	addedMetadataDeployment := paramsWithMode(v1alpha1.ModeDeployment)
 	addedMetadataDeployment.OtelCol.Labels = map[string]string{
 		labelName: labelVal,
@@ -125,7 +125,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							d := appsv1.Deployment{}
 							exists, err := populateObjectIfExists(t, &d, namespacedObjectName(appliedInstance, naming.Collector))
 							assert.NoError(t, err)
@@ -147,7 +147,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							d := appsv1.Deployment{}
 							exists, err := populateObjectIfExists(t, &d, namespacedObjectName(appliedInstance, naming.Collector))
 							assert.NoError(t, err)
@@ -212,7 +212,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							d := networkingv1.Ingress{}
 							exists, err := populateObjectIfExists(t, &d, namespacedObjectName(appliedInstance, naming.Ingress))
 							assert.NoError(t, err)
@@ -225,7 +225,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							d := networkingv1.Ingress{}
 							exists, err := populateObjectIfExists(t, &d, namespacedObjectName(appliedInstance, naming.Ingress))
 							assert.NoError(t, err)
@@ -248,7 +248,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							got := routev1.Route{}
 							nsn := types.NamespacedName{Namespace: appliedInstance.Namespace, Name: "otlp-grpc-test-route"}
 							exists, err := populateObjectIfExists(t, &got, nsn)
@@ -262,7 +262,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							got := routev1.Route{}
 							nsn := types.NamespacedName{Namespace: appliedInstance.Namespace, Name: "otlp-grpc-test-route"}
 							exists, err := populateObjectIfExists(t, &got, nsn)
@@ -286,7 +286,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							actual := autoscalingv2.HorizontalPodAutoscaler{}
 							exists, hpaErr := populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.HorizontalPodAutoscaler))
 							assert.NoError(t, hpaErr)
@@ -303,7 +303,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							actual := autoscalingv2.HorizontalPodAutoscaler{}
 							exists, hpaErr := populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.HorizontalPodAutoscaler))
 							assert.NoError(t, hpaErr)
@@ -329,7 +329,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							actual := policyV1.PodDisruptionBudget{}
 							exists, pdbErr := populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.HorizontalPodAutoscaler))
 							assert.NoError(t, pdbErr)
@@ -344,7 +344,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							actual := policyV1.PodDisruptionBudget{}
 							exists, pdbErr := populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.HorizontalPodAutoscaler))
 							assert.NoError(t, pdbErr)
@@ -367,7 +367,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							exists, err := populateObjectIfExists(t, &appsv1.DaemonSet{}, namespacedObjectName(appliedInstance, naming.Collector))
 							assert.NoError(t, err)
 							assert.True(t, exists)
@@ -392,7 +392,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							exists, err := populateObjectIfExists(t, &v1.ConfigMap{}, namespacedObjectName(appliedInstance, naming.Collector))
 							assert.NoError(t, err)
 							assert.True(t, exists)
@@ -414,7 +414,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							exists, err := populateObjectIfExists(t, &v1.ConfigMap{}, namespacedObjectName(appliedInstance, naming.Collector))
 							assert.NoError(t, err)
 							assert.True(t, exists)
@@ -455,7 +455,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							exists, err := populateObjectIfExists(t, &v1.ConfigMap{}, namespacedObjectName(appliedInstance, naming.Collector))
 							assert.NoError(t, err)
 							assert.True(t, exists)
@@ -475,7 +475,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
-						func(t *testing.T, appliedInstance v1alpha1.OpenTelemetryCollector) {
+						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							actual := appsv1.Deployment{}
 							exists, err := populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.TargetAllocator))
 							assert.NoError(t, err)
@@ -523,7 +523,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 			}
 			// run the next set of checks
 			for pid, updateParam := range tt.args.updates {
-				existing := v1alpha1.OpenTelemetryCollector{}
+				existing := v1alpha1.AmazonCloudWatchAgent{}
 				found, err := populateObjectIfExists(t, &existing, nsn)
 				assert.True(t, found)
 				assert.NoError(t, err)
@@ -557,7 +557,7 @@ func TestOpenTelemetryCollectorReconciler_Reconcile(t *testing.T) {
 	}
 }
 
-func namespacedObjectName(instance v1alpha1.OpenTelemetryCollector, namingFunc func(string) string) types.NamespacedName {
+func namespacedObjectName(instance v1alpha1.AmazonCloudWatchAgent, namingFunc func(string) string) types.NamespacedName {
 	return types.NamespacedName{
 		Namespace: instance.Namespace,
 		Name:      namingFunc(instance.Name),

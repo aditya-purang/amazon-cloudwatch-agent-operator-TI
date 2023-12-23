@@ -18,8 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests"
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests/collector"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests/collector"
 
 	routev1 "github.com/openshift/api/route/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -27,12 +27,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
 )
 
 // Routes reconciles the route(s) required for the instance in the current context.
 // TODO: This functionality should be put with the rest of reconciliation logic in the mutate.go
-// https://github.com/open-telemetry/opentelemetry-operator/issues/2108
+// https://github.com/aws/amazon-cloudwatch-agent-operator/issues/2108
 func Routes(ctx context.Context, params manifests.Params) error {
 	if params.OtelCol.Spec.Ingress.Type != v1alpha1.IngressTypeRoute {
 		return nil

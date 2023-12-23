@@ -1,17 +1,3 @@
-// Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package main
 
 import (
@@ -19,11 +5,6 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"os"
-	"runtime"
-	"strings"
-	"time"
-
 	routev1 "github.com/openshift/api/route/v1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/spf13/pflag"
@@ -34,27 +15,33 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/record"
 	k8sapiflag "k8s.io/component-base/cli/flag"
+	"os"
+	"runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	"strings"
 
-	otelv1alpha1 "github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
-	"github.com/open-telemetry/opentelemetry-operator/controllers"
-	"github.com/open-telemetry/opentelemetry-operator/internal/config"
-	"github.com/open-telemetry/opentelemetry-operator/internal/version"
-	"github.com/open-telemetry/opentelemetry-operator/internal/webhook/podmutation"
-	"github.com/open-telemetry/opentelemetry-operator/pkg/autodetect"
-	collectorupgrade "github.com/open-telemetry/opentelemetry-operator/pkg/collector/upgrade"
-	"github.com/open-telemetry/opentelemetry-operator/pkg/featuregate"
-	"github.com/open-telemetry/opentelemetry-operator/pkg/instrumentation"
-	instrumentationupgrade "github.com/open-telemetry/opentelemetry-operator/pkg/instrumentation/upgrade"
-	"github.com/open-telemetry/opentelemetry-operator/pkg/sidecar"
+	otelv1alpha1 "github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
+	"github.com/aws/amazon-cloudwatch-agent-operator/controllers"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/config"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/version"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/webhook/podmutation"
+	collectorupgrade "github.com/aws/amazon-cloudwatch-agent-operator/pkg/collector/upgrade"
+	"github.com/aws/amazon-cloudwatch-agent-operator/pkg/featuregate"
+	"github.com/aws/amazon-cloudwatch-agent-operator/pkg/instrumentation"
+	instrumentationupgrade "github.com/aws/amazon-cloudwatch-agent-operator/pkg/instrumentation/upgrade"
+	"github.com/aws/amazon-cloudwatch-agent-operator/pkg/sidecar"
 	// +kubebuilder:scaffold:imports
+)
+
+const (
+	cloudwatchAgentImageRepository         = "public.ecr.aws/cloudwatch-agent/cloudwatch-agent"
+	autoInstrumentationJavaImageRepository = "public.ecr.aws/aws-observability/adot-autoinstrumentation-java"
 )
 
 var (
@@ -87,94 +74,39 @@ func main() {
 
 	// add flags related to this operator
 	var (
-		metricsAddr                    string
-		probeAddr                      string
-		pprofAddr                      string
-		enableLeaderElection           bool
-		collectorImage                 string
-		targetAllocatorImage           string
-		operatorOpAMPBridgeImage       string
-		autoInstrumentationJava        string
-		autoInstrumentationNodeJS      string
-		autoInstrumentationPython      string
-		autoInstrumentationDotNet      string
-		autoInstrumentationApacheHttpd string
-		autoInstrumentationNginx       string
-		autoInstrumentationGo          string
-		labelsFilter                   []string
-		webhookPort                    int
-		tlsOpt                         tlsConfig
+		agentImage              string
+		autoInstrumentationJava string
+		webhookPort             int
+		tlsOpt                  tlsConfig
 	)
 
-	pflag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
-	pflag.StringVar(&probeAddr, "health-probe-addr", ":8081", "The address the probe endpoint binds to.")
-	pflag.StringVar(&pprofAddr, "pprof-addr", "", "The address to expose the pprof server. Default is empty string which disables the pprof server.")
-	pflag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
-	pflag.StringVar(&collectorImage, "collector-image", fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector:%s", v.OpenTelemetryCollector), "The default OpenTelemetry collector image. This image is used when no image is specified in the CustomResource.")
-	pflag.StringVar(&targetAllocatorImage, "target-allocator-image", fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-operator/target-allocator:%s", v.TargetAllocator), "The default OpenTelemetry target allocator image. This image is used when no image is specified in the CustomResource.")
-	pflag.StringVar(&operatorOpAMPBridgeImage, "operator-opamp-bridge-image", fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-operator/operator-opamp-bridge:%s", v.OperatorOpAMPBridge), "The default OpenTelemetry Operator OpAMP Bridge image. This image is used when no image is specified in the CustomResource.")
-	pflag.StringVar(&autoInstrumentationJava, "auto-instrumentation-java-image", fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-java:%s", v.AutoInstrumentationJava), "The default OpenTelemetry Java instrumentation image. This image is used when no image is specified in the CustomResource.")
-	pflag.StringVar(&autoInstrumentationNodeJS, "auto-instrumentation-nodejs-image", fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-nodejs:%s", v.AutoInstrumentationNodeJS), "The default OpenTelemetry NodeJS instrumentation image. This image is used when no image is specified in the CustomResource.")
-	pflag.StringVar(&autoInstrumentationPython, "auto-instrumentation-python-image", fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-python:%s", v.AutoInstrumentationPython), "The default OpenTelemetry Python instrumentation image. This image is used when no image is specified in the CustomResource.")
-	pflag.StringVar(&autoInstrumentationDotNet, "auto-instrumentation-dotnet-image", fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-dotnet:%s", v.AutoInstrumentationDotNet), "The default OpenTelemetry DotNet instrumentation image. This image is used when no image is specified in the CustomResource.")
-	pflag.StringVar(&autoInstrumentationGo, "auto-instrumentation-go-image", fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-go-instrumentation/autoinstrumentation-go:%s", v.AutoInstrumentationGo), "The default OpenTelemetry Go instrumentation image. This image is used when no image is specified in the CustomResource.")
-	pflag.StringVar(&autoInstrumentationApacheHttpd, "auto-instrumentation-apache-httpd-image", fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-apache-httpd:%s", v.AutoInstrumentationApacheHttpd), "The default OpenTelemetry Apache HTTPD instrumentation image. This image is used when no image is specified in the CustomResource.")
-	pflag.StringVar(&autoInstrumentationNginx, "auto-instrumentation-nginx-image", fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-apache-httpd:%s", v.AutoInstrumentationNginx), "The default OpenTelemetry Nginx instrumentation image. This image is used when no image is specified in the CustomResource.")
-	pflag.StringArrayVar(&labelsFilter, "labels", []string{}, "Labels to filter away from propagating onto deploys")
-	pflag.IntVar(&webhookPort, "webhook-port", 9443, "The port the webhook endpoint binds to.")
-	pflag.StringVar(&tlsOpt.minVersion, "tls-min-version", "VersionTLS12", "Minimum TLS version supported. Value must match version names from https://golang.org/pkg/crypto/tls/#pkg-constants.")
-	pflag.StringSliceVar(&tlsOpt.cipherSuites, "tls-cipher-suites", nil, "Comma-separated list of cipher suites for the server. Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants). If omitted, the default Go cipher suites will be used")
+	pflag.StringVar(&agentImage, "agent-image", fmt.Sprintf("%s:%s", cloudwatchAgentImageRepository, v.AmazonCloudWatchAgent), "The default cloudwatch agent image. This image is used when no image is specified in the CustomResource.")
+	pflag.StringVar(&autoInstrumentationJava, "auto-instrumentation-java-image", fmt.Sprintf("%s:%s", autoInstrumentationJavaImageRepository, v.AutoInstrumentationJava), "The default OpenTelemetry Java instrumentation image. This image is used when no image is specified in the CustomResource.")
 	pflag.Parse()
 
 	logger := zap.New(zap.UseFlagOptions(&opts))
 	ctrl.SetLogger(logger)
 
-	logger.Info("Starting the OpenTelemetry Operator",
-		"opentelemetry-operator", v.Operator,
-		"opentelemetry-collector", collectorImage,
-		"opentelemetry-targetallocator", targetAllocatorImage,
-		"operator-opamp-bridge", operatorOpAMPBridgeImage,
+	logger.Info("Starting the Amazon CloudWatch Agent Operator",
+		"amazon-cloudwatch-agent-operator", v.Operator,
+		"amazon-cloudwatch-agent", agentImage,
 		"auto-instrumentation-java", autoInstrumentationJava,
-		"auto-instrumentation-nodejs", autoInstrumentationNodeJS,
-		"auto-instrumentation-python", autoInstrumentationPython,
-		"auto-instrumentation-dotnet", autoInstrumentationDotNet,
-		"auto-instrumentation-go", autoInstrumentationGo,
-		"auto-instrumentation-apache-httpd", autoInstrumentationApacheHttpd,
-		"auto-instrumentation-nginx", autoInstrumentationNginx,
-		"feature-gates", flagset.Lookup(featuregate.FeatureGatesFlag).Value.String(),
 		"build-date", v.BuildDate,
 		"go-version", v.Go,
 		"go-arch", runtime.GOARCH,
 		"go-os", runtime.GOOS,
-		"labels-filter", labelsFilter,
 	)
 
 	restConfig := ctrl.GetConfigOrDie()
 
-	// builds the operator's configuration
-	ad, err := autodetect.New(restConfig)
-	if err != nil {
-		setupLog.Error(err, "failed to setup auto-detect routine")
-		os.Exit(1)
-	}
+	// set java instrumentation java image in environment variable to be used for default instrumentation
+	os.Setenv("AUTO_INSTRUMENTATION_JAVA", autoInstrumentationJava)
 
 	cfg := config.New(
 		config.WithLogger(ctrl.Log.WithName("config")),
 		config.WithVersion(v),
-		config.WithCollectorImage(collectorImage),
-		config.WithTargetAllocatorImage(targetAllocatorImage),
-		config.WithOperatorOpAMPBridgeImage(operatorOpAMPBridgeImage),
+		config.WithCollectorImage(agentImage),
 		config.WithAutoInstrumentationJavaImage(autoInstrumentationJava),
-		config.WithAutoInstrumentationNodeJSImage(autoInstrumentationNodeJS),
-		config.WithAutoInstrumentationPythonImage(autoInstrumentationPython),
-		config.WithAutoInstrumentationDotNetImage(autoInstrumentationDotNet),
-		config.WithAutoInstrumentationGoImage(autoInstrumentationGo),
-		config.WithAutoInstrumentationApacheHttpdImage(autoInstrumentationApacheHttpd),
-		config.WithAutoInstrumentationNginxImage(autoInstrumentationNginx),
-		config.WithAutoDetect(ad),
-		config.WithLabelFilters(labelsFilter),
 	)
 
 	watchNamespace, found := os.LookupEnv("WATCH_NAMESPACE")
@@ -183,11 +115,6 @@ func main() {
 	} else {
 		setupLog.Info("the env var WATCH_NAMESPACE isn't set, watching all namespaces")
 	}
-
-	// see https://github.com/openshift/library-go/blob/4362aa519714a4b62b00ab8318197ba2bba51cb7/pkg/config/leaderelection/leaderelection.go#L104
-	leaseDuration := time.Second * 137
-	renewDeadline := time.Second * 107
-	retryPeriod := time.Second * 26
 
 	optionsTlSOptsFuncs := []func(*tls.Config){
 		func(config *tls.Config) { tlsConfigSetting(config, tlsOpt) },
@@ -202,22 +129,12 @@ func main() {
 
 	mgrOptions := ctrl.Options{
 		Scheme: scheme,
-		Metrics: metricsserver.Options{
-			BindAddress: metricsAddr,
-		},
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "9f7554c3.opentelemetry.io",
-		LeaseDuration:          &leaseDuration,
-		RenewDeadline:          &renewDeadline,
-		RetryPeriod:            &retryPeriod,
-		PprofBindAddress:       pprofAddr,
 		WebhookServer: webhook.NewServer(webhook.Options{
 			Port:    webhookPort,
 			TLSOpts: optionsTlSOptsFuncs,
 		}),
 		Cache: cache.Options{
-			DefaultNamespaces: namespaces,
+			Namespaces: namespaces,
 		},
 	}
 
@@ -236,18 +153,18 @@ func main() {
 
 	if err = controllers.NewReconciler(controllers.Params{
 		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("OpenTelemetryCollector"),
+		Log:      ctrl.Log.WithName("controllers").WithName("AmazonCloudWatchAgent"),
 		Scheme:   mgr.GetScheme(),
 		Config:   cfg,
-		Recorder: mgr.GetEventRecorderFor("opentelemetry-operator"),
+		Recorder: mgr.GetEventRecorderFor("amazon-cloudwatch-agent-operator"),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "OpenTelemetryCollector")
+		setupLog.Error(err, "unable to create controller", "controller", "AmazonCloudWatchAgent")
 		os.Exit(1)
 	}
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = otelv1alpha1.SetupCollectorWebhook(mgr, cfg); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "OpenTelemetryCollector")
+			setupLog.Error(err, "unable to create webhook", "webhook", "AmazonCloudWatchAgent")
 			os.Exit(1)
 		}
 		if err = otelv1alpha1.SetupInstrumentationWebhook(mgr, cfg); err != nil {
@@ -259,7 +176,7 @@ func main() {
 			Handler: podmutation.NewWebhookHandler(cfg, ctrl.Log.WithName("pod-webhook"), decoder, mgr.GetClient(),
 				[]podmutation.PodMutator{
 					sidecar.NewMutator(logger, cfg, mgr.GetClient()),
-					instrumentation.NewMutator(logger, mgr.GetClient(), mgr.GetEventRecorderFor("opentelemetry-operator")),
+					instrumentation.NewMutator(logger, mgr.GetClient(), mgr.GetEventRecorderFor("amazon-cloudwatch-agent-operator")),
 				}),
 		})
 	} else {
@@ -302,22 +219,16 @@ func addDependencies(_ context.Context, mgr ctrl.Manager, cfg config.Config, v v
 		return up.ManagedInstances(c)
 	}))
 	if err != nil {
-		return fmt.Errorf("failed to upgrade OpenTelemetryCollector instances: %w", err)
+		return fmt.Errorf("failed to upgrade AmazonCloudWatchAgent instances: %w", err)
 	}
 
 	// adds the upgrade mechanism to be executed once the manager is ready
 	err = mgr.Add(manager.RunnableFunc(func(c context.Context) error {
 		u := &instrumentationupgrade.InstrumentationUpgrade{
-			Logger:                     ctrl.Log.WithName("instrumentation-upgrade"),
-			DefaultAutoInstJava:        cfg.AutoInstrumentationJavaImage(),
-			DefaultAutoInstNodeJS:      cfg.AutoInstrumentationNodeJSImage(),
-			DefaultAutoInstPython:      cfg.AutoInstrumentationPythonImage(),
-			DefaultAutoInstDotNet:      cfg.AutoInstrumentationDotNetImage(),
-			DefaultAutoInstGo:          cfg.AutoInstrumentationDotNetImage(),
-			DefaultAutoInstApacheHttpd: cfg.AutoInstrumentationApacheHttpdImage(),
-			DefaultAutoInstNginx:       cfg.AutoInstrumentationNginxImage(),
-			Client:                     mgr.GetClient(),
-			Recorder:                   mgr.GetEventRecorderFor("opentelemetry-operator"),
+			Logger:              ctrl.Log.WithName("instrumentation-upgrade"),
+			DefaultAutoInstJava: cfg.AutoInstrumentationJavaImage(),
+			Client:              mgr.GetClient(),
+			Recorder:            mgr.GetEventRecorderFor("amazon-cloudwatch-agent-operator"),
 		}
 		return u.ManagedInstances(c)
 	}))

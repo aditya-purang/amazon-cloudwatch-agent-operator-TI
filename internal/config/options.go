@@ -21,8 +21,8 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/open-telemetry/opentelemetry-operator/internal/version"
-	"github.com/open-telemetry/opentelemetry-operator/pkg/autodetect"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/version"
+	"github.com/aws/amazon-cloudwatch-agent-operator/pkg/autodetect"
 )
 
 // Option represents one specific configuration option.

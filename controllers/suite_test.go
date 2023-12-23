@@ -45,10 +45,10 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
-	"github.com/open-telemetry/opentelemetry-operator/internal/config"
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests"
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests/collector/testdata"
+	"github.com/aws/amazon-cloudwatch-agent-operator/apis/v1alpha1"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/config"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests/collector/testdata"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -193,7 +193,7 @@ func paramsWithModeAndReplicas(mode v1alpha1.Mode, replicas int32) manifests.Par
 	return manifests.Params{
 		Config: config.New(config.WithCollectorImage(defaultCollectorImage), config.WithTargetAllocatorImage(defaultTaAllocationImage)),
 		Client: k8sClient,
-		OtelCol: v1alpha1.OpenTelemetryCollector{
+		OtelCol: v1alpha1.AmazonCloudWatchAgent{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "opentelemetry.io",
 				APIVersion: "v1",
@@ -202,8 +202,8 @@ func paramsWithModeAndReplicas(mode v1alpha1.Mode, replicas int32) manifests.Par
 				Name:      "test",
 				Namespace: "default",
 			},
-			Spec: v1alpha1.OpenTelemetryCollectorSpec{
-				Image: "ghcr.io/open-telemetry/opentelemetry-operator/opentelemetry-operator:0.47.0",
+			Spec: v1alpha1.AmazonCloudWatchAgentSpec{
+				Image: "ghcr.io/aws/amazon-cloudwatch-agent-operator/opentelemetry-operator:0.47.0",
 				Ports: []v1.ServicePort{{
 					Name: "web",
 					Port: 80,
@@ -243,7 +243,7 @@ func newParams(taContainerImage string, file string) (manifests.Params, error) {
 	return manifests.Params{
 		Config: cfg,
 		Client: k8sClient,
-		OtelCol: v1alpha1.OpenTelemetryCollector{
+		OtelCol: v1alpha1.AmazonCloudWatchAgent{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "opentelemetry.io",
 				APIVersion: "v1",
@@ -252,7 +252,7 @@ func newParams(taContainerImage string, file string) (manifests.Params, error) {
 				Name:      "test",
 				Namespace: "default",
 			},
-			Spec: v1alpha1.OpenTelemetryCollectorSpec{
+			Spec: v1alpha1.AmazonCloudWatchAgentSpec{
 				Mode: v1alpha1.ModeStatefulSet,
 				Ports: []v1.ServicePort{{
 					Name: "web",
@@ -289,7 +289,7 @@ func paramsWithHPA(minReps, maxReps int32) manifests.Params {
 	return manifests.Params{
 		Config: configuration,
 		Client: k8sClient,
-		OtelCol: v1alpha1.OpenTelemetryCollector{
+		OtelCol: v1alpha1.AmazonCloudWatchAgent{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "opentelemetry.io",
 				APIVersion: "v1",
@@ -299,7 +299,7 @@ func paramsWithHPA(minReps, maxReps int32) manifests.Params {
 				Namespace: "default",
 				UID:       instanceUID,
 			},
-			Spec: v1alpha1.OpenTelemetryCollectorSpec{
+			Spec: v1alpha1.AmazonCloudWatchAgentSpec{
 				Ports: []v1.ServicePort{{
 					Name: "web",
 					Port: 80,
@@ -355,7 +355,7 @@ func paramsWithPolicy(minAvailable, maxUnavailable int32) manifests.Params {
 	return manifests.Params{
 		Config: configuration,
 		Client: k8sClient,
-		OtelCol: v1alpha1.OpenTelemetryCollector{
+		OtelCol: v1alpha1.AmazonCloudWatchAgent{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "opentelemetry.io",
 				APIVersion: "v1",
@@ -365,7 +365,7 @@ func paramsWithPolicy(minAvailable, maxUnavailable int32) manifests.Params {
 				Namespace: "default",
 				UID:       instanceUID,
 			},
-			Spec: v1alpha1.OpenTelemetryCollectorSpec{
+			Spec: v1alpha1.AmazonCloudWatchAgentSpec{
 				Ports: []v1.ServicePort{{
 					Name: "web",
 					Port: 80,

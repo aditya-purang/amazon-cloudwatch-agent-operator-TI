@@ -25,8 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests/collector/adapters"
-	"github.com/open-telemetry/opentelemetry-operator/internal/manifests/collector/parser/receiver"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests/collector/adapters"
+	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests/collector/parser/receiver"
 )
 
 var logger = logf.Log.WithName("unit-tests")
