@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -13,7 +16,6 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"k8s.io/client-go/tools/record"
 	k8sapiflag "k8s.io/component-base/cli/flag"
 	"os"
 	"runtime"
@@ -31,7 +33,6 @@ import (
 	"github.com/aws/amazon-cloudwatch-agent-operator/internal/config"
 	"github.com/aws/amazon-cloudwatch-agent-operator/internal/version"
 	"github.com/aws/amazon-cloudwatch-agent-operator/internal/webhook/podmutation"
-	collectorupgrade "github.com/aws/amazon-cloudwatch-agent-operator/pkg/collector/upgrade"
 	"github.com/aws/amazon-cloudwatch-agent-operator/pkg/featuregate"
 	"github.com/aws/amazon-cloudwatch-agent-operator/pkg/instrumentation"
 	instrumentationupgrade "github.com/aws/amazon-cloudwatch-agent-operator/pkg/instrumentation/upgrade"
@@ -96,8 +97,6 @@ func main() {
 		"go-arch", runtime.GOARCH,
 		"go-os", runtime.GOOS,
 	)
-
-	restConfig := ctrl.GetConfigOrDie()
 
 	// set java instrumentation java image in environment variable to be used for default instrumentation
 	os.Setenv("AUTO_INSTRUMENTATION_JAVA", autoInstrumentationJava)
@@ -207,19 +206,6 @@ func addDependencies(_ context.Context, mgr ctrl.Manager, cfg config.Config, v v
 	}))
 	if err != nil {
 		return fmt.Errorf("failed to start the auto-detect mechanism: %w", err)
-	}
-	// adds the upgrade mechanism to be executed once the manager is ready
-	err = mgr.Add(manager.RunnableFunc(func(c context.Context) error {
-		up := &collectorupgrade.VersionUpgrade{
-			Log:      ctrl.Log.WithName("collector-upgrade"),
-			Version:  v,
-			Client:   mgr.GetClient(),
-			Recorder: record.NewFakeRecorder(collectorupgrade.RecordBufferSize),
-		}
-		return up.ManagedInstances(c)
-	}))
-	if err != nil {
-		return fmt.Errorf("failed to upgrade AmazonCloudWatchAgent instances: %w", err)
 	}
 
 	// adds the upgrade mechanism to be executed once the manager is ready

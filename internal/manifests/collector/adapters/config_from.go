@@ -1,21 +1,11 @@
-// Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package adapters is for data conversion.
 package adapters
 
 import (
+	"encoding/json"
 	"errors"
 
 	"gopkg.in/yaml.v2"
@@ -23,7 +13,8 @@ import (
 
 var (
 	// ErrInvalidYAML represents an error in the format of the configuration file.
-	ErrInvalidYAML = errors.New("couldn't parse the opentelemetry-collector configuration")
+	ErrInvalidYAML = errors.New("couldn't parse the yaml configuration")
+	ErrInvalidJSON = errors.New("couldn't parse cloudwatch agent json configuration")
 )
 
 // ConfigFromString extracts a configuration map from the given string.
@@ -32,6 +23,15 @@ func ConfigFromString(configStr string) (map[interface{}]interface{}, error) {
 	config := make(map[interface{}]interface{})
 	if err := yaml.Unmarshal([]byte(configStr), &config); err != nil {
 		return nil, ErrInvalidYAML
+	}
+
+	return config, nil
+}
+
+func ConfigFromJSONString(configStr string) (map[string]interface{}, error) {
+	config := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(configStr), &config); err != nil {
+		return nil, ErrInvalidJSON
 	}
 
 	return config, nil

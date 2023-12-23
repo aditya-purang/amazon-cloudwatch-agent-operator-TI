@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controllers_test
+package testdata_test
 
 import (
 	"context"
@@ -21,7 +21,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	v1 "k8s.io/api/core/v1"
@@ -37,7 +36,6 @@ import (
 	"github.com/aws/amazon-cloudwatch-agent-operator/controllers"
 	"github.com/aws/amazon-cloudwatch-agent-operator/internal/config"
 	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests"
-	ta "github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests/targetallocator/adapters"
 	"github.com/aws/amazon-cloudwatch-agent-operator/internal/naming"
 )
 
@@ -63,34 +61,31 @@ var (
 type check func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent)
 
 func newParamsAssertNoErr(t *testing.T, taContainerImage string, file string) manifests.Params {
-	p, err := newParams(taContainerImage, file)
+	p, err := controllers.newParams(taContainerImage, file)
 	assert.NoError(t, err)
-	if len(taContainerImage) == 0 {
-		p.OtelCol.Spec.TargetAllocator.Enabled = false
-	}
 	return p
 }
 
 func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
-	addedMetadataDeployment := paramsWithMode(v1alpha1.ModeDeployment)
+	addedMetadataDeployment := controllers.paramsWithMode(v1alpha1.ModeDeployment)
 	addedMetadataDeployment.OtelCol.Labels = map[string]string{
 		labelName: labelVal,
 	}
 	addedMetadataDeployment.OtelCol.Annotations = map[string]string{
 		annotationName: annotationVal,
 	}
-	deploymentExtraPorts := paramsWithModeAndReplicas(v1alpha1.ModeDeployment, 3)
+	deploymentExtraPorts := controllers.paramsWithModeAndReplicas(v1alpha1.ModeDeployment, 3)
 	deploymentExtraPorts.OtelCol.Spec.Ports = append(deploymentExtraPorts.OtelCol.Spec.Ports, extraPorts)
-	ingressParams := newParamsAssertNoErr(t, "", testFileIngress)
+	ingressParams := newParamsAssertNoErr(t, "", controllers.testFileIngress)
 	ingressParams.OtelCol.Spec.Ingress.Type = "ingress"
-	updatedIngressParams := newParamsAssertNoErr(t, "", testFileIngress)
+	updatedIngressParams := newParamsAssertNoErr(t, "", controllers.testFileIngress)
 	updatedIngressParams.OtelCol.Spec.Ingress.Type = "ingress"
 	updatedIngressParams.OtelCol.Spec.Ingress.Annotations = map[string]string{"blub": "blob"}
 	updatedIngressParams.OtelCol.Spec.Ingress.Hostname = expectHostname
-	routeParams := newParamsAssertNoErr(t, "", testFileIngress)
+	routeParams := newParamsAssertNoErr(t, "", controllers.testFileIngress)
 	routeParams.OtelCol.Spec.Ingress.Type = v1alpha1.IngressTypeRoute
 	routeParams.OtelCol.Spec.Ingress.Route.Termination = v1alpha1.TLSRouteTerminationTypeInsecure
-	updatedRouteParams := newParamsAssertNoErr(t, "", testFileIngress)
+	updatedRouteParams := newParamsAssertNoErr(t, "", controllers.testFileIngress)
 	updatedRouteParams.OtelCol.Spec.Ingress.Type = v1alpha1.IngressTypeRoute
 	updatedRouteParams.OtelCol.Spec.Ingress.Route.Termination = v1alpha1.TLSRouteTerminationTypeInsecure
 	updatedRouteParams.OtelCol.Spec.Ingress.Hostname = expectHostname
@@ -127,16 +122,16 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 					checks: []check{
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							d := appsv1.Deployment{}
-							exists, err := populateObjectIfExists(t, &d, namespacedObjectName(appliedInstance, naming.Collector))
+							exists, err := controllers.populateObjectIfExists(t, &d, namespacedObjectName(appliedInstance, naming.Collector))
 							assert.NoError(t, err)
 							assert.True(t, exists)
 							assert.Equal(t, int32(2), *d.Spec.Replicas)
 							assert.Contains(t, d.Annotations, annotationName)
 							assert.Contains(t, d.Labels, labelName)
-							exists, err = populateObjectIfExists(t, &v1.Service{}, namespacedObjectName(appliedInstance, naming.Service))
+							exists, err = controllers.populateObjectIfExists(t, &v1.Service{}, namespacedObjectName(appliedInstance, naming.Service))
 							assert.NoError(t, err)
 							assert.True(t, exists)
-							exists, err = populateObjectIfExists(t, &v1.ServiceAccount{}, namespacedObjectName(appliedInstance, naming.ServiceAccount))
+							exists, err = controllers.populateObjectIfExists(t, &v1.ServiceAccount{}, namespacedObjectName(appliedInstance, naming.ServiceAccount))
 							assert.NoError(t, err)
 							assert.True(t, exists)
 						},
@@ -149,7 +144,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 					checks: []check{
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							d := appsv1.Deployment{}
-							exists, err := populateObjectIfExists(t, &d, namespacedObjectName(appliedInstance, naming.Collector))
+							exists, err := controllers.populateObjectIfExists(t, &d, namespacedObjectName(appliedInstance, naming.Collector))
 							assert.NoError(t, err)
 							assert.True(t, exists)
 							assert.Equal(t, int32(3), *d.Spec.Replicas)
@@ -157,7 +152,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 							assert.Contains(t, d.Annotations, annotationName)
 							assert.Contains(t, d.Labels, labelName)
 							actual := v1.Service{}
-							exists, err = populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.Service))
+							exists, err = controllers.populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.Service))
 							assert.NoError(t, err)
 							assert.True(t, exists)
 							assert.Contains(t, actual.Spec.Ports, extraPorts)
@@ -171,7 +166,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 		{
 			name: "invalid mode",
 			args: args{
-				params:  paramsWithMode("bad"),
+				params:  controllers.paramsWithMode("bad"),
 				updates: []manifests.Params{},
 			},
 			want: []want{
@@ -188,7 +183,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 		{
 			name: "invalid prometheus configuration",
 			args: args{
-				params:  newParamsAssertNoErr(t, baseTaImage, testFileIngress),
+				params:  newParamsAssertNoErr(t, baseTaImage, controllers.testFileIngress),
 				updates: []manifests.Params{},
 			},
 			want: []want{
@@ -214,7 +209,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 					checks: []check{
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							d := networkingv1.Ingress{}
-							exists, err := populateObjectIfExists(t, &d, namespacedObjectName(appliedInstance, naming.Ingress))
+							exists, err := controllers.populateObjectIfExists(t, &d, namespacedObjectName(appliedInstance, naming.Ingress))
 							assert.NoError(t, err)
 							assert.True(t, exists)
 						},
@@ -227,7 +222,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 					checks: []check{
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							d := networkingv1.Ingress{}
-							exists, err := populateObjectIfExists(t, &d, namespacedObjectName(appliedInstance, naming.Ingress))
+							exists, err := controllers.populateObjectIfExists(t, &d, namespacedObjectName(appliedInstance, naming.Ingress))
 							assert.NoError(t, err)
 							assert.True(t, exists)
 							assert.Equal(t, "something-else.com", d.Spec.Rules[0].Host)
@@ -251,7 +246,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							got := routev1.Route{}
 							nsn := types.NamespacedName{Namespace: appliedInstance.Namespace, Name: "otlp-grpc-test-route"}
-							exists, err := populateObjectIfExists(t, &got, nsn)
+							exists, err := controllers.populateObjectIfExists(t, &got, nsn)
 							assert.NoError(t, err)
 							assert.True(t, exists)
 						},
@@ -265,7 +260,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							got := routev1.Route{}
 							nsn := types.NamespacedName{Namespace: appliedInstance.Namespace, Name: "otlp-grpc-test-route"}
-							exists, err := populateObjectIfExists(t, &got, nsn)
+							exists, err := controllers.populateObjectIfExists(t, &got, nsn)
 							assert.NoError(t, err)
 							assert.True(t, exists)
 							assert.Equal(t, "otlp-grpc.something-else.com", got.Spec.Host)
@@ -279,8 +274,8 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 		{
 			name: "hpa v2 deployment collector",
 			args: args{
-				params:  paramsWithHPA(3, 5),
-				updates: []manifests.Params{paramsWithHPA(1, 9)},
+				params:  controllers.paramsWithHPA(3, 5),
+				updates: []manifests.Params{controllers.paramsWithHPA(1, 9)},
 			},
 			want: []want{
 				{
@@ -288,7 +283,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 					checks: []check{
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							actual := autoscalingv2.HorizontalPodAutoscaler{}
-							exists, hpaErr := populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.HorizontalPodAutoscaler))
+							exists, hpaErr := controllers.populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.HorizontalPodAutoscaler))
 							assert.NoError(t, hpaErr)
 							require.Len(t, actual.Spec.Metrics, 1)
 							assert.Equal(t, int32(90), *actual.Spec.Metrics[0].Resource.Target.AverageUtilization)
@@ -305,7 +300,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 					checks: []check{
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							actual := autoscalingv2.HorizontalPodAutoscaler{}
-							exists, hpaErr := populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.HorizontalPodAutoscaler))
+							exists, hpaErr := controllers.populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.HorizontalPodAutoscaler))
 							assert.NoError(t, hpaErr)
 							require.Len(t, actual.Spec.Metrics, 1)
 							assert.Equal(t, int32(90), *actual.Spec.Metrics[0].Resource.Target.AverageUtilization)
@@ -322,8 +317,8 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 		{
 			name: "policy v1 deployment collector",
 			args: args{
-				params:  paramsWithPolicy(1, 0),
-				updates: []manifests.Params{paramsWithPolicy(0, 1)},
+				params:  controllers.paramsWithPolicy(1, 0),
+				updates: []manifests.Params{controllers.paramsWithPolicy(0, 1)},
 			},
 			want: []want{
 				{
@@ -331,7 +326,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 					checks: []check{
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							actual := policyV1.PodDisruptionBudget{}
-							exists, pdbErr := populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.HorizontalPodAutoscaler))
+							exists, pdbErr := controllers.populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.HorizontalPodAutoscaler))
 							assert.NoError(t, pdbErr)
 							assert.Equal(t, int32(1), actual.Spec.MinAvailable.IntVal)
 							assert.Nil(t, actual.Spec.MaxUnavailable)
@@ -346,7 +341,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 					checks: []check{
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							actual := policyV1.PodDisruptionBudget{}
-							exists, pdbErr := populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.HorizontalPodAutoscaler))
+							exists, pdbErr := controllers.populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.HorizontalPodAutoscaler))
 							assert.NoError(t, pdbErr)
 							assert.Nil(t, actual.Spec.MinAvailable)
 							assert.Equal(t, int32(1), actual.Spec.MaxUnavailable.IntVal)
@@ -361,14 +356,14 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 		{
 			name: "daemonset collector",
 			args: args{
-				params: paramsWithMode(v1alpha1.ModeDaemonSet),
+				params: controllers.paramsWithMode(v1alpha1.ModeDaemonSet),
 			},
 			want: []want{
 				{
 					result: controllerruntime.Result{},
 					checks: []check{
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
-							exists, err := populateObjectIfExists(t, &appsv1.DaemonSet{}, namespacedObjectName(appliedInstance, naming.Collector))
+							exists, err := controllers.populateObjectIfExists(t, &appsv1.DaemonSet{}, namespacedObjectName(appliedInstance, naming.Collector))
 							assert.NoError(t, err)
 							assert.True(t, exists)
 						},
@@ -381,11 +376,11 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 		{
 			name: "stateful should update collector with TA",
 			args: args{
-				params: paramsWithMode(v1alpha1.ModeStatefulSet),
+				params: controllers.paramsWithMode(v1alpha1.ModeStatefulSet),
 				updates: []manifests.Params{
-					newParamsAssertNoErr(t, baseTaImage, promFile),
-					newParamsAssertNoErr(t, baseTaImage, updatedPromFile),
-					newParamsAssertNoErr(t, updatedTaImage, updatedPromFile),
+					newParamsAssertNoErr(t, baseTaImage, controllers.promFile),
+					newParamsAssertNoErr(t, baseTaImage, controllers.updatedPromFile),
+					newParamsAssertNoErr(t, updatedTaImage, controllers.updatedPromFile),
 				},
 			},
 			want: []want{
@@ -393,17 +388,17 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 					result: controllerruntime.Result{},
 					checks: []check{
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
-							exists, err := populateObjectIfExists(t, &v1.ConfigMap{}, namespacedObjectName(appliedInstance, naming.Collector))
+							exists, err := controllers.populateObjectIfExists(t, &v1.ConfigMap{}, namespacedObjectName(appliedInstance, naming.Collector))
 							assert.NoError(t, err)
 							assert.True(t, exists)
-							exists, err = populateObjectIfExists(t, &appsv1.StatefulSet{}, namespacedObjectName(appliedInstance, naming.Collector))
+							exists, err = controllers.populateObjectIfExists(t, &appsv1.StatefulSet{}, namespacedObjectName(appliedInstance, naming.Collector))
 							assert.NoError(t, err)
 							assert.True(t, exists)
 							// Check the TA doesn't exist
-							exists, err = populateObjectIfExists(t, &v1.ConfigMap{}, namespacedObjectName(appliedInstance, naming.TargetAllocator))
+							exists, err = controllers.populateObjectIfExists(t, &v1.ConfigMap{}, namespacedObjectName(appliedInstance, naming.TargetAllocator))
 							assert.NoError(t, err)
 							assert.False(t, exists)
-							exists, err = populateObjectIfExists(t, &appsv1.Deployment{}, namespacedObjectName(appliedInstance, naming.TargetAllocator))
+							exists, err = controllers.populateObjectIfExists(t, &appsv1.Deployment{}, namespacedObjectName(appliedInstance, naming.TargetAllocator))
 							assert.NoError(t, err)
 							assert.False(t, exists)
 						},
@@ -415,38 +410,19 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 					result: controllerruntime.Result{},
 					checks: []check{
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
-							exists, err := populateObjectIfExists(t, &v1.ConfigMap{}, namespacedObjectName(appliedInstance, naming.Collector))
+							exists, err := controllers.populateObjectIfExists(t, &v1.ConfigMap{}, namespacedObjectName(appliedInstance, naming.Collector))
 							assert.NoError(t, err)
 							assert.True(t, exists)
 							actual := v1.ConfigMap{}
-							exists, err = populateObjectIfExists(t, &appsv1.Deployment{}, namespacedObjectName(appliedInstance, naming.TargetAllocator))
+							exists, err = controllers.populateObjectIfExists(t, &appsv1.Deployment{}, namespacedObjectName(appliedInstance, naming.TargetAllocator))
 							assert.NoError(t, err)
 							assert.True(t, exists)
-							exists, err = populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.TargetAllocator))
+							exists, err = controllers.populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.TargetAllocator))
 							assert.NoError(t, err)
 							assert.True(t, exists)
-							exists, err = populateObjectIfExists(t, &v1.ServiceAccount{}, namespacedObjectName(appliedInstance, naming.TargetAllocatorServiceAccount))
+							exists, err = controllers.populateObjectIfExists(t, &v1.ServiceAccount{}, namespacedObjectName(appliedInstance, naming.TargetAllocatorServiceAccount))
 							assert.NoError(t, err)
 							assert.True(t, exists)
-
-							promConfig, err := ta.ConfigToPromConfig(newParamsAssertNoErr(t, baseTaImage, promFile).OtelCol.Spec.Config)
-							assert.NoError(t, err)
-
-							taConfig := make(map[interface{}]interface{})
-							taConfig["label_selector"] = map[string]string{
-								"app.kubernetes.io/instance":   "default.test",
-								"app.kubernetes.io/managed-by": "opentelemetry-operator",
-								"app.kubernetes.io/component":  "opentelemetry-collector",
-								"app.kubernetes.io/part-of":    "opentelemetry",
-							}
-							taConfig["config"] = promConfig["config"]
-							taConfig["allocation_strategy"] = "least-weighted"
-							taConfig["prometheus_cr"] = map[string]string{
-								"scrape_interval": "30s",
-							}
-							taConfigYAML, _ := yaml.Marshal(taConfig)
-							assert.Equal(t, string(taConfigYAML), actual.Data["targetallocator.yaml"])
-							assert.NotContains(t, actual.Data["targetallocator.yaml"], "0.0.0.0:10100")
 						},
 					},
 					wantErr:     assert.NoError,
@@ -456,14 +432,14 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 					result: controllerruntime.Result{},
 					checks: []check{
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
-							exists, err := populateObjectIfExists(t, &v1.ConfigMap{}, namespacedObjectName(appliedInstance, naming.Collector))
+							exists, err := controllers.populateObjectIfExists(t, &v1.ConfigMap{}, namespacedObjectName(appliedInstance, naming.Collector))
 							assert.NoError(t, err)
 							assert.True(t, exists)
 							actual := v1.ConfigMap{}
-							exists, err = populateObjectIfExists(t, &appsv1.Deployment{}, namespacedObjectName(appliedInstance, naming.TargetAllocator))
+							exists, err = controllers.populateObjectIfExists(t, &appsv1.Deployment{}, namespacedObjectName(appliedInstance, naming.TargetAllocator))
 							assert.NoError(t, err)
 							assert.True(t, exists)
-							exists, err = populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.TargetAllocator))
+							exists, err = controllers.populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.TargetAllocator))
 							assert.NoError(t, err)
 							assert.True(t, exists)
 							assert.Contains(t, actual.Data["targetallocator.yaml"], "0.0.0.0:10100")
@@ -477,7 +453,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 					checks: []check{
 						func(t *testing.T, appliedInstance v1alpha1.AmazonCloudWatchAgent) {
 							actual := appsv1.Deployment{}
-							exists, err := populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.TargetAllocator))
+							exists, err := controllers.populateObjectIfExists(t, &actual, namespacedObjectName(appliedInstance, naming.TargetAllocator))
 							assert.NoError(t, err)
 							assert.True(t, exists)
 							assert.Equal(t, actual.Spec.Template.Spec.Containers[0].Image, updatedTaImage)
@@ -494,9 +470,9 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 			testContext := context.Background()
 			nsn := types.NamespacedName{Name: tt.args.params.OtelCol.Name, Namespace: tt.args.params.OtelCol.Namespace}
 			reconciler := controllers.NewReconciler(controllers.Params{
-				Client:   k8sClient,
+				Client:   controllers.k8sClient,
 				Log:      logger,
-				Scheme:   testScheme,
+				Scheme:   controllers.testScheme,
 				Recorder: record.NewFakeRecorder(20),
 				Config: config.New(
 					config.WithCollectorImage("default-collector"),
@@ -505,7 +481,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 			})
 			assert.True(t, len(tt.want) > 0, "must have at least one group of checks to run")
 			firstCheck := tt.want[0]
-			createErr := k8sClient.Create(testContext, &tt.args.params.OtelCol)
+			createErr := controllers.k8sClient.Create(testContext, &tt.args.params.OtelCol)
 			if !firstCheck.validateErr(t, createErr) {
 				return
 			}
@@ -514,7 +490,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 			}
 			got, reconcileErr := reconciler.Reconcile(testContext, req)
 			if !firstCheck.wantErr(t, reconcileErr) {
-				require.NoError(t, k8sClient.Delete(testContext, &tt.args.params.OtelCol))
+				require.NoError(t, controllers.k8sClient.Delete(testContext, &tt.args.params.OtelCol))
 				return
 			}
 			assert.Equal(t, firstCheck.result, got)
@@ -524,13 +500,13 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 			// run the next set of checks
 			for pid, updateParam := range tt.args.updates {
 				existing := v1alpha1.AmazonCloudWatchAgent{}
-				found, err := populateObjectIfExists(t, &existing, nsn)
+				found, err := controllers.populateObjectIfExists(t, &existing, nsn)
 				assert.True(t, found)
 				assert.NoError(t, err)
 
 				updateParam.OtelCol.SetResourceVersion(existing.ResourceVersion)
 				updateParam.OtelCol.SetUID(existing.UID)
-				err = k8sClient.Update(testContext, &updateParam.OtelCol)
+				err = controllers.k8sClient.Update(testContext, &updateParam.OtelCol)
 				assert.NoError(t, err)
 				if err != nil {
 					continue
@@ -551,7 +527,7 @@ func TestAmazonCloudWatchAgentReconciler_Reconcile(t *testing.T) {
 			}
 			// Only delete upon a successful creation
 			if createErr == nil {
-				require.NoError(t, k8sClient.Delete(testContext, &tt.args.params.OtelCol))
+				require.NoError(t, controllers.k8sClient.Delete(testContext, &tt.args.params.OtelCol))
 			}
 		})
 	}

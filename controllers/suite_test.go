@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	testdata2 "github.com/aws/amazon-cloudwatch-agent-operator/controllers/testdata"
 	"net"
 	"os"
 	"path/filepath"
@@ -219,7 +220,7 @@ func paramsWithModeAndReplicas(mode v1alpha1.Mode, replicas int32) manifests.Par
 			},
 		},
 		Scheme:   testScheme,
-		Log:      logger,
+		Log:      testdata2.logger,
 		Recorder: record.NewFakeRecorder(10),
 	}
 }
@@ -263,16 +264,12 @@ func newParams(taContainerImage string, file string) (manifests.Params, error) {
 					},
 					NodePort: 0,
 				}},
-				TargetAllocator: v1alpha1.OpenTelemetryTargetAllocator{
-					Enabled: true,
-					Image:   taContainerImage,
-				},
 				Replicas: &replicas,
 				Config:   string(configYAML),
 			},
 		},
 		Scheme: testScheme,
-		Log:    logger,
+		Log:    testdata2.logger,
 	}, nil
 }
 
@@ -281,8 +278,6 @@ func paramsWithHPA(minReps, maxReps int32) manifests.Params {
 	if err != nil {
 		fmt.Printf("Error getting yaml file: %v", err)
 	}
-
-	cpuUtilization := int32(90)
 
 	configuration := config.New(config.WithCollectorImage(defaultCollectorImage), config.WithTargetAllocatorImage(defaultTaAllocationImage))
 
@@ -310,15 +305,10 @@ func paramsWithHPA(minReps, maxReps int32) manifests.Params {
 					NodePort: 0,
 				}},
 				Config: string(configYAML),
-				Autoscaler: &v1alpha1.AutoscalerSpec{
-					MinReplicas:          &minReps,
-					MaxReplicas:          &maxReps,
-					TargetCPUUtilization: &cpuUtilization,
-				},
 			},
 		},
 		Scheme:   testScheme,
-		Log:      logger,
+		Log:      testdata2.logger,
 		Recorder: record.NewFakeRecorder(10),
 	}
 }
@@ -329,27 +319,10 @@ func paramsWithPolicy(minAvailable, maxUnavailable int32) manifests.Params {
 		fmt.Printf("Error getting yaml file: %v", err)
 	}
 
-	configuration := config.New(config.WithAutoDetect(mockAutoDetector), config.WithCollectorImage(defaultCollectorImage), config.WithTargetAllocatorImage(defaultTaAllocationImage))
+	configuration := config.New(config.WithAutoDetect(testdata2.mockAutoDetector), config.WithCollectorImage(defaultCollectorImage), config.WithTargetAllocatorImage(defaultTaAllocationImage))
 	err = configuration.AutoDetect()
 	if err != nil {
-		logger.Error(err, "configuration.autodetect failed")
-	}
-
-	pdb := &v1alpha1.PodDisruptionBudgetSpec{}
-
-	if maxUnavailable > 0 && minAvailable > 0 {
-		fmt.Printf("worng configuration: %v", fmt.Errorf("minAvailable and maxUnavailable cannot be both set"))
-	}
-	if maxUnavailable > 0 {
-		pdb.MaxUnavailable = &intstr.IntOrString{
-			Type:   intstr.Int,
-			IntVal: maxUnavailable,
-		}
-	} else {
-		pdb.MinAvailable = &intstr.IntOrString{
-			Type:   intstr.Int,
-			IntVal: minAvailable,
-		}
+		testdata2.logger.Error(err, "configuration.autodetect failed")
 	}
 
 	return manifests.Params{
@@ -375,12 +348,11 @@ func paramsWithPolicy(minAvailable, maxUnavailable int32) manifests.Params {
 					},
 					NodePort: 0,
 				}},
-				Config:              string(configYAML),
-				PodDisruptionBudget: pdb,
+				Config: string(configYAML),
 			},
 		},
 		Scheme:   testScheme,
-		Log:      logger,
+		Log:      testdata2.logger,
 		Recorder: record.NewFakeRecorder(10),
 	}
 }

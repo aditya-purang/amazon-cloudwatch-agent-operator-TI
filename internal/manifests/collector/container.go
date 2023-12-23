@@ -1,27 +1,13 @@
-// Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 package collector
 
 import (
-	"errors"
 	"fmt"
-	"path"
 	"sort"
 
 	"github.com/go-logr/logr"
-	"github.com/operator-framework/operator-lib/proxy"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 
@@ -42,8 +28,7 @@ func Container(cfg config.Config, logger logr.Logger, otelcol v1alpha1.AmazonClo
 		image = cfg.CollectorImage()
 	}
 
-	// build container ports from service ports
-	ports := getConfigContainerPorts(logger, otelcol.Spec.Config)
+	ports := getContainerPorts(logger, otelcol.Spec.Config)
 	for _, p := range otelcol.Spec.Ports {
 		ports[p.Name] = corev1.ContainerPort{
 			Name:          p.Name,
@@ -61,22 +46,18 @@ func Container(cfg config.Config, logger logr.Logger, otelcol v1alpha1.AmazonClo
 	var args []string
 	// When adding a config via v1alpha1.AmazonCloudWatchAgentSpec.Config, we ensure that it is always the
 	// first item in the args. At the time of writing, although multiple configs are allowed in the
-	// opentelemetry collector, the operator has yet to implement such functionality.  When multiple configs
+	// cloudwatch agent, the operator has yet to implement such functionality.  When multiple configs
 	// are present they should be merged in a deterministic manner using the order given, and because
 	// v1alpha1.AmazonCloudWatchAgentSpec.Config is a required field we assume that it will always be the
 	// "primary" config and in the future additional configs can be appended to the container args in a simple manner.
+
 	if addConfig {
-		// if key exists then delete key and excluded from the iteration after this block
-		if _, exists := argsMap["config"]; exists {
-			logger.Info("the 'config' flag isn't allowed and is being ignored")
-			delete(argsMap, "config")
-		}
-		args = append(args, fmt.Sprintf("--config=/conf/%s", cfg.CollectorConfigMapEntry()))
 		volumeMounts = append(volumeMounts,
 			corev1.VolumeMount{
 				Name:      naming.ConfigMapVolume(),
-				MountPath: "/conf",
-			})
+				MountPath: "/etc/cwagentconfig",
+			},
+		)
 	}
 
 	// ensure that the v1alpha1.AmazonCloudWatchAgentSpec.Args are ordered when moved to container.Args,
@@ -107,86 +88,44 @@ func Container(cfg config.Config, logger logr.Logger, otelcol v1alpha1.AmazonClo
 		},
 	})
 
-	if len(otelcol.Spec.ConfigMaps) > 0 {
-		for keyCfgMap := range otelcol.Spec.ConfigMaps {
-			volumeMounts = append(volumeMounts, corev1.VolumeMount{
-				Name:      naming.ConfigMapExtra(otelcol.Spec.ConfigMaps[keyCfgMap].Name),
-				MountPath: path.Join("/var/conf", otelcol.Spec.ConfigMaps[keyCfgMap].MountPath, naming.ConfigMapExtra(otelcol.Spec.ConfigMaps[keyCfgMap].Name)),
-			})
-		}
+	if _, err := adapters.ConfigFromJSONString(otelcol.Spec.Config); err != nil {
+		logger.Error(err, "error parsing config")
 	}
 
-	var livenessProbe *corev1.Probe
-	if configFromString, err := adapters.ConfigFromString(otelcol.Spec.Config); err == nil {
-		if probe, err := getLivenessProbe(configFromString, otelcol.Spec.LivenessProbe); err == nil {
-			livenessProbe = probe
-		} else if errors.Is(err, adapters.ErrNoServiceExtensions) {
-			logger.Info("extensions not configured, skipping liveness probe creation")
-		} else if errors.Is(err, adapters.ErrNoServiceExtensionHealthCheck) {
-			logger.Info("healthcheck extension not configured, skipping liveness probe creation")
-		} else {
-			logger.Error(err, "cannot create liveness probe.")
-		}
-	}
-
-	envVars = append(envVars, proxy.ReadProxyVarsFromEnv()...)
 	return corev1.Container{
 		Name:            naming.Container(),
 		Image:           image,
 		ImagePullPolicy: otelcol.Spec.ImagePullPolicy,
-		Ports:           portMapToList(ports),
 		VolumeMounts:    volumeMounts,
 		Args:            args,
 		Env:             envVars,
 		EnvFrom:         otelcol.Spec.EnvFrom,
 		Resources:       otelcol.Spec.Resources,
-		SecurityContext: otelcol.Spec.SecurityContext,
-		LivenessProbe:   livenessProbe,
-		Lifecycle:       otelcol.Spec.Lifecycle,
+		Ports:           portMapToList(ports),
 	}
 }
 
-func getConfigContainerPorts(logger logr.Logger, cfg string) map[string]corev1.ContainerPort {
+func getContainerPorts(logger logr.Logger, cfg string) map[string]corev1.ContainerPort {
 	ports := map[string]corev1.ContainerPort{}
-	c, err := adapters.ConfigFromString(cfg)
-	if err != nil {
-		logger.Error(err, "couldn't extract the configuration")
-		return ports
-	}
-	ps := adapters.ConfigToPorts(logger, c)
-	if len(ps) > 0 {
-		for _, p := range ps {
-			truncName := naming.Truncate(p.Name, maxPortLen)
-			if p.Name != truncName {
-				logger.Info("truncating container port name",
-					"port.name.prev", p.Name, "port.name.new", truncName)
-			}
-			nameErrs := validation.IsValidPortName(truncName)
-			numErrs := validation.IsValidPortNum(int(p.Port))
-			if len(nameErrs) > 0 || len(numErrs) > 0 {
-				logger.Info("dropping invalid container port", "port.name", truncName, "port.num", p.Port,
-					"port.name.errs", nameErrs, "num.errs", numErrs)
-				continue
-			}
-			ports[truncName] = corev1.ContainerPort{
-				Name:          truncName,
-				ContainerPort: p.Port,
-				Protocol:      p.Protocol,
-			}
+	for _, p := range CloudwatchAgentPorts {
+		truncName := naming.Truncate(p.Name, maxPortLen)
+		if p.Name != truncName {
+			logger.Info("truncating container port name",
+				"port.name.prev", p.Name, "port.name.new", truncName)
+		}
+		nameErrs := validation.IsValidPortName(truncName)
+		numErrs := validation.IsValidPortNum(int(p.Port))
+		if len(nameErrs) > 0 || len(numErrs) > 0 {
+			logger.Info("dropping invalid container port", "port.name", truncName, "port.num", p.Port,
+				"port.name.errs", nameErrs, "num.errs", numErrs)
+			continue
+		}
+		ports[truncName] = corev1.ContainerPort{
+			Name:          truncName,
+			ContainerPort: p.Port,
+			Protocol:      p.Protocol,
 		}
 	}
-
-	metricsPort, err := adapters.ConfigToMetricsPort(logger, c)
-	if err != nil {
-		logger.Info("couldn't determine metrics port from configuration, using 8888 default value", "error", err)
-		metricsPort = 8888
-	}
-	ports["metrics"] = corev1.ContainerPort{
-		Name:          "metrics",
-		ContainerPort: metricsPort,
-		Protocol:      corev1.ProtocolTCP,
-	}
-
 	return ports
 }
 
@@ -199,30 +138,4 @@ func portMapToList(portMap map[string]corev1.ContainerPort) []corev1.ContainerPo
 		return ports[i].Name < ports[j].Name
 	})
 	return ports
-}
-
-func getLivenessProbe(config map[interface{}]interface{}, probeConfig *v1alpha1.Probe) (*corev1.Probe, error) {
-	probe, err := adapters.ConfigToContainerProbe(config)
-	if err != nil {
-		return nil, err
-	}
-	if probeConfig != nil {
-		if probeConfig.InitialDelaySeconds != nil {
-			probe.InitialDelaySeconds = *probeConfig.InitialDelaySeconds
-		}
-		if probeConfig.PeriodSeconds != nil {
-			probe.PeriodSeconds = *probeConfig.PeriodSeconds
-		}
-		if probeConfig.FailureThreshold != nil {
-			probe.FailureThreshold = *probeConfig.FailureThreshold
-		}
-		if probeConfig.SuccessThreshold != nil {
-			probe.SuccessThreshold = *probeConfig.SuccessThreshold
-		}
-		if probeConfig.TimeoutSeconds != nil {
-			probe.TimeoutSeconds = *probeConfig.TimeoutSeconds
-		}
-		probe.TerminationGracePeriodSeconds = probeConfig.TerminationGracePeriodSeconds
-	}
-	return probe, nil
 }

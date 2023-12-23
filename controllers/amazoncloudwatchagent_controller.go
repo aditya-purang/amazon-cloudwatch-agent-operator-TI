@@ -148,9 +148,6 @@ func NewReconciler(p Params) *AmazonCloudWatchAgentReconciler {
 // +kubebuilder:rbac:groups="",resources=configmaps;services;serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups=apps,resources=daemonsets;deployments;statefulsets,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=policy,resources=poddisruptionbudgets,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;create;update
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=servicemonitors,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=route.openshift.io,resources=routes;routes/custom-host,verbs=get;list;watch;create;update;patch;delete
@@ -172,12 +169,6 @@ func (r *AmazonCloudWatchAgentReconciler) Reconcile(ctx context.Context, req ctr
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-
-	if instance.Spec.ManagementState == v1alpha1.ManagementStateUnmanaged {
-		log.Info("Skipping reconciliation for unmanaged AmazonCloudWatchAgent resource", "name", req.String())
-		// Stop requeueing for unmanaged AmazonCloudWatchAgent custom resources
-		return ctrl.Result{}, nil
 	}
 
 	params := r.getParams(instance)

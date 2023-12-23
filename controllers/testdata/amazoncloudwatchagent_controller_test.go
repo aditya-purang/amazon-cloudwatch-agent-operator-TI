@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controllers_test
+package testdata_test
 
 import (
 	"context"
@@ -58,9 +58,9 @@ func TestNewObjectsOnReconciliation(t *testing.T) {
 	)
 	nsn := types.NamespacedName{Name: "my-instance", Namespace: "default"}
 	reconciler := controllers.NewReconciler(controllers.Params{
-		Client:   k8sClient,
+		Client:   controllers.k8sClient,
 		Log:      logger,
-		Scheme:   testScheme,
+		Scheme:   controllers.testScheme,
 		Recorder: record.NewFakeRecorder(10),
 		Config:   cfg,
 	})
@@ -86,7 +86,7 @@ func TestNewObjectsOnReconciliation(t *testing.T) {
 			},
 		},
 	}
-	err := k8sClient.Create(context.Background(), created)
+	err := controllers.k8sClient.Create(context.Background(), created)
 	require.NoError(t, err)
 
 	// test
@@ -111,58 +111,58 @@ func TestNewObjectsOnReconciliation(t *testing.T) {
 	// whether we have the right ones is up to the specific tests for each type
 	{
 		list := &corev1.ConfigMapList{}
-		err = k8sClient.List(context.Background(), list, opts...)
+		err = controllers.k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, list.Items)
 	}
 	{
 		list := &corev1.ServiceAccountList{}
-		err = k8sClient.List(context.Background(), list, opts...)
+		err = controllers.k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, list.Items)
 	}
 	{
 		list := &corev1.ServiceList{}
-		err = k8sClient.List(context.Background(), list, opts...)
+		err = controllers.k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, list.Items)
 	}
 	{
 		list := &appsv1.DeploymentList{}
-		err = k8sClient.List(context.Background(), list, opts...)
+		err = controllers.k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, list.Items)
 	}
 	{
 		list := &appsv1.DaemonSetList{}
-		err = k8sClient.List(context.Background(), list, opts...)
+		err = controllers.k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		// attention! we expect daemonsets to be empty in the default configuration
 		assert.Empty(t, list.Items)
 	}
 	{
 		list := &appsv1.StatefulSetList{}
-		err = k8sClient.List(context.Background(), list, opts...)
+		err = controllers.k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		// attention! we expect statefulsets to be empty in the default configuration
 		assert.Empty(t, list.Items)
 	}
 	{
 		list := &routev1.RouteList{}
-		err = k8sClient.List(context.Background(), list, opts...)
+		err = controllers.k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, list.Items)
 	}
 
 	// cleanup
-	require.NoError(t, k8sClient.Delete(context.Background(), created))
+	require.NoError(t, controllers.k8sClient.Delete(context.Background(), created))
 
 	// cleanup the deployment deliberately, otherwise a local tester will always fail as there is no gc event.
 	list := &appsv1.DeploymentList{}
-	err = k8sClient.List(context.Background(), list, opts...)
+	err = controllers.k8sClient.List(context.Background(), list, opts...)
 	assert.NoError(t, err)
 	assert.Len(t, list.Items, 1)
-	require.NoError(t, k8sClient.Delete(context.Background(), list.Items[0].DeepCopy()))
+	require.NoError(t, controllers.k8sClient.Delete(context.Background(), list.Items[0].DeepCopy()))
 }
 
 func TestNewStatefulSetObjectsOnReconciliation(t *testing.T) {
@@ -170,9 +170,9 @@ func TestNewStatefulSetObjectsOnReconciliation(t *testing.T) {
 	cfg := config.New(config.WithAutoDetect(mockAutoDetector))
 	nsn := types.NamespacedName{Name: "my-instance", Namespace: "default"}
 	reconciler := controllers.NewReconciler(controllers.Params{
-		Client:   k8sClient,
+		Client:   controllers.k8sClient,
 		Log:      logger,
-		Scheme:   testScheme,
+		Scheme:   controllers.testScheme,
 		Recorder: record.NewFakeRecorder(10),
 		Config:   cfg,
 	})
@@ -185,7 +185,7 @@ func TestNewStatefulSetObjectsOnReconciliation(t *testing.T) {
 			Mode: v1alpha1.ModeStatefulSet,
 		},
 	}
-	err := k8sClient.Create(context.Background(), created)
+	err := controllers.k8sClient.Create(context.Background(), created)
 	require.NoError(t, err)
 
 	// test
@@ -210,45 +210,45 @@ func TestNewStatefulSetObjectsOnReconciliation(t *testing.T) {
 	// whether we have the right ones is up to the specific tests for each type
 	{
 		list := &corev1.ConfigMapList{}
-		err = k8sClient.List(context.Background(), list, opts...)
+		err = controllers.k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, list.Items)
 	}
 	{
 		list := &corev1.ServiceAccountList{}
-		err = k8sClient.List(context.Background(), list, opts...)
+		err = controllers.k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, list.Items)
 	}
 	{
 		list := &corev1.ServiceList{}
-		err = k8sClient.List(context.Background(), list, opts...)
+		err = controllers.k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, list.Items)
 	}
 	{
 		list := &appsv1.StatefulSetList{}
-		err = k8sClient.List(context.Background(), list, opts...)
+		err = controllers.k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, list.Items)
 	}
 	{
 		list := &appsv1.DeploymentList{}
-		err = k8sClient.List(context.Background(), list, opts...)
+		err = controllers.k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		// attention! we expect deployments to be empty when starting in the statefulset mode.
 		assert.Empty(t, list.Items)
 	}
 	{
 		list := &appsv1.DaemonSetList{}
-		err = k8sClient.List(context.Background(), list, opts...)
+		err = controllers.k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		// attention! we expect daemonsets to be empty when starting in the statefulset mode.
 		assert.Empty(t, list.Items)
 	}
 
 	// cleanup
-	require.NoError(t, k8sClient.Delete(context.Background(), created))
+	require.NoError(t, controllers.k8sClient.Delete(context.Background(), created))
 
 }
 
@@ -288,7 +288,7 @@ func TestSkipWhenInstanceDoesNotExist(t *testing.T) {
 	cfg := config.New()
 	nsn := types.NamespacedName{Name: "non-existing-my-instance", Namespace: "default"}
 	reconciler := controllers.NewReconciler(controllers.Params{
-		Client: k8sClient,
+		Client: controllers.k8sClient,
 		Log:    logger,
 		Scheme: scheme.Scheme,
 		Config: cfg,

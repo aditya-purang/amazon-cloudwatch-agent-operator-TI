@@ -23,8 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/aws/amazon-cloudwatch-agent-operator/internal/manifests"
-	"github.com/aws/amazon-cloudwatch-agent-operator/internal/version"
-	collectorupgrade "github.com/aws/amazon-cloudwatch-agent-operator/pkg/collector/upgrade"
 )
 
 const (
@@ -46,18 +44,6 @@ func HandleReconcileStatus(ctx context.Context, log logr.Logger, params manifest
 	}
 	changed := params.OtelCol.DeepCopy()
 
-	up := &collectorupgrade.VersionUpgrade{
-		Log:      params.Log,
-		Version:  version.Get(),
-		Client:   params.Client,
-		Recorder: params.Recorder,
-	}
-	upgraded, upgradeErr := up.ManagedInstance(ctx, *changed)
-	if upgradeErr != nil {
-		// don't fail to allow setting the status
-		params.Log.Error(upgradeErr, "failed to upgrade the OpenTelemetry CR")
-	}
-	changed = &upgraded
 	statusErr := UpdateCollectorStatus(ctx, params.Client, changed)
 	if statusErr != nil {
 		params.Recorder.Event(changed, eventTypeWarning, reasonStatusFailure, statusErr.Error())
