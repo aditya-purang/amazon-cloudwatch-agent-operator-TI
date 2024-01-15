@@ -38,32 +38,6 @@ resource "aws_eks_cluster" "this" {
   }
 }
 
-# EKS Node Groups
-resource "aws_eks_node_group" "this" {
-  cluster_name    = aws_eks_cluster.this.name
-  node_group_name = "${local.cluster_name}-node"
-  node_role_arn   = aws_iam_role.node_role.arn
-  subnet_ids      = module.basic_components.public_subnet_ids
-
-  scaling_config {
-    desired_size = 1
-    max_size     = 1
-    min_size     = 1
-  }
-
-  ami_type       = "AL2_x86_64"
-  capacity_type  = "ON_DEMAND"
-  disk_size      = 20
-  instance_types = ["t3a.medium"]
-
-  depends_on = [
-    aws_iam_role_policy_attachment.node_CloudWatchAgentServerPolicy,
-    aws_iam_role_policy_attachment.node_AmazonEC2ContainerRegistryReadOnly,
-    aws_iam_role_policy_attachment.node_AmazonEKS_CNI_Policy,
-    aws_iam_role_policy_attachment.node_AmazonEKSWorkerNodePolicy
-  ]
-}
-
 ## EKS Cluster Addon
 
 resource "aws_eks_addon" "eks_windows_addon" {
@@ -95,13 +69,13 @@ resource "kubernetes_config_map" "configmap" {
 - groups:
   - system:bootstrappers
   - system:nodes
-  rolearn: arn:aws:iam::${data.aws_caller_identity.account_id.account_id}:role/${local.cluster_name}-node
+  rolearn: arn:aws:iam::${data.aws_caller_identity.account_id.account_id}:role/${local.cluster_name}-Worker-Role-${module.common.testing_id}
   username: system:node:{{EC2PrivateDNSName}}
 - groups:
   - eks:kube-proxy-windows
   - system:bootstrappers
   - system:nodes
-  rolearn: arn:aws:iam::${data.aws_caller_identity.account_id.account_id}:role/${local.cluster_name}-windows-node
+  rolearn: arn:aws:iam::${data.aws_caller_identity.account_id.account_id}:role/${local.cluster_name}-Worker-Role-${module.common.testing_id}
   username: system:node:{{EC2PrivateDNSName}}
 EOT
   }
@@ -110,6 +84,32 @@ EOT
     name      = "aws-auth"
     namespace = "kube-system"
   }
+}
+
+# EKS Node Groups
+resource "aws_eks_node_group" "this" {
+  cluster_name    = aws_eks_cluster.this.name
+  node_group_name = "${local.cluster_name}-node"
+  node_role_arn   = aws_iam_role.node_role.arn
+  subnet_ids      = module.basic_components.public_subnet_ids
+
+  scaling_config {
+    desired_size = 1
+    max_size     = 1
+    min_size     = 1
+  }
+
+  ami_type       = "AL2_x86_64"
+  capacity_type  = "ON_DEMAND"
+  disk_size      = 20
+  instance_types = ["t3a.medium"]
+
+  depends_on = [
+    aws_iam_role_policy_attachment.node_CloudWatchAgentServerPolicy,
+    aws_iam_role_policy_attachment.node_AmazonEC2ContainerRegistryReadOnly,
+    aws_iam_role_policy_attachment.node_AmazonEKS_CNI_Policy,
+    aws_iam_role_policy_attachment.node_AmazonEKSWorkerNodePolicy
+  ]
 }
 
 # EKS Windows Node Groups
@@ -140,7 +140,7 @@ resource "aws_eks_node_group" "node_group_windows" {
 
 # EKS Node IAM Role
 resource "aws_iam_role" "node_role" {
-  name = "${local.cluster_name}-Windows-Worker-Role-${module.common.testing_id}"
+  name = "${local.cluster_name}-Worker-Role-${module.common.testing_id}"
 
   assume_role_policy = <<POLICY
 {
@@ -208,6 +208,6 @@ resource "null_resource" "validator" {
     helm_release.this
   ]
   provisioner "local-exec" {
-    command = "go test ${var.test_dir} -v"
+    command = "go test ${var.test_dir} -v --tags=windowslinux"
   }
 }

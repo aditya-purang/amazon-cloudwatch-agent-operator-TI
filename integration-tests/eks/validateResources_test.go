@@ -1,6 +1,9 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build linuxonly || windowslinux
+// +build linuxonly windowslinux
+
 package eks_addon
 
 import (
@@ -32,16 +35,10 @@ const (
 )
 
 const (
-	serviceCountLinux     = 4
-	serviceCountWindows   = 3
-	deploymentCount       = 1
-	daemonsetCountLinux   = 2
-	daemonsetCountWindows = 2
-	podCountLinux         = 3
-	podCountWindows       = 2
-	podCount              = podCountLinux + podCountWindows
-	serviceCount          = serviceCountLinux + serviceCountWindows
-	daemonsetCount        = daemonsetCountLinux + daemonsetCountWindows
+	deploymentCount = 1
+	podCount        = podCountLinux + podCountWindows
+	serviceCount    = serviceCountLinux + serviceCountWindows
+	daemonsetCount  = daemonsetCountLinux + daemonsetCountWindows
 )
 
 func TestOperatorOnEKs(t *testing.T) {
