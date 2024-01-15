@@ -49,7 +49,8 @@ resource "aws_eks_addon" "eks_windows_addon" {
 
 resource "kubernetes_config_map" "amazon_vpc_cni_windows" {
   depends_on = [
-    aws_eks_cluster.this
+    aws_eks_cluster.this,
+    aws_eks_addon.eks_windows_addon
   ]
   metadata {
     name      = "amazon-vpc-cni"
