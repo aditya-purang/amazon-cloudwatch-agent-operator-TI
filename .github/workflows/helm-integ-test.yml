@@ -59,10 +59,8 @@ jobs:
           command: |
             cd integration-tests/terraform/helm-windows
             terraform init
-            if terraform apply -auto-approve \
-                -var="kube_dir=${{ github.workspace }}/../../../.kube"; then
-              terraform destroy -auto-approve
-            fi
+            terraform apply -auto-approve \
+                -var="kube_dir=${{ github.workspace }}/../../../.kube"
 
       - name: Terraform destroy
         if: ${{ cancelled() || failure() }}
@@ -73,4 +71,3 @@ jobs:
           retry_wait_seconds: 5
           command: |
             cd integration-tests/terraform/helm-windows
-            # terraform destroy --auto-approve
