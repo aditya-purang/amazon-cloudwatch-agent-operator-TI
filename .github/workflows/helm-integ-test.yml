@@ -75,4 +75,4 @@ jobs:
           retry_wait_seconds: 5
           command: |
             cd integration-tests/terraform/helm-windows
-            terraform destroy --auto-approve
+            # terraform destroy --auto-approve
