@@ -203,6 +203,21 @@ data "kubernetes_config_map" "debug1" {
   }
 }
 
+output "cm-debug1" {
+  value = data.kubernetes_config_map.debug1.data
+}
+
+data "kubernetes_pod" "debug2" {
+  metadata {
+    name = "cloudwatch"
+    namespace = "amazon-cloudwatch"
+  }
+}
+
+output "pod-debug2" {
+  value = data.kubernetes_pod.debug2.status
+}
+
 resource "helm_release" "this" {
   depends_on = [
     null_resource.kubectl
