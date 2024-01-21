@@ -197,6 +197,11 @@ resource "null_resource" "kubectl" {
 }
 
 data "kubernetes_config_map" "debug1" {
+  depends_on = [
+    aws_eks_cluster.this,
+    aws_eks_node_group.this,
+    aws_eks_node_group.node_group_windows
+  ]
   metadata {
     name      = "aws-auth"
     namespace = "kube-system"
@@ -204,6 +209,9 @@ data "kubernetes_config_map" "debug1" {
 }
 
 output "cm-debug1" {
+  depends_on = [
+    data.kubernetes_config_map.debug1
+  ]
   value = data.kubernetes_config_map.debug1.data
 }
 
@@ -224,6 +232,9 @@ resource "time_sleep" "wait_7_min" {
 }
 
 data "kubernetes_pod" "debug2" {
+  depends_on = [
+    time_sleep.wait_7_min
+  ]
   metadata {
     name = "cloudwatch"
     namespace = "amazon-cloudwatch"
