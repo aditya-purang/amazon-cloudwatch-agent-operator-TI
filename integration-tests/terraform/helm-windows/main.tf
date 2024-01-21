@@ -206,9 +206,16 @@ resource "helm_release" "this" {
   chart      = "${var.helm_dir}"
 }
 
+resource "time_sleep" "wait_3_min" {
+  depends_on = [helm_release.this]
+
+  create_duration = "3m"
+}
+
 resource "null_resource" "validator" {
   depends_on = [
-    helm_release.this
+    helm_release.this,
+    time_sleep.wait_3_min
   ]
   provisioner "local-exec" {
     command = "go test ${var.test_dir} -v --tags=windowslinux"
