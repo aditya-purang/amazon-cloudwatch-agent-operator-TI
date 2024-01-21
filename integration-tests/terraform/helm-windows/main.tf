@@ -238,15 +238,15 @@ resource "helm_release" "this" {
   chart      = "${var.helm_dir}"
 }
 
-resource "time_sleep" "wait_7_min" {
+resource "time_sleep" "wait_15_min" {
   depends_on = [helm_release.this]
 
-  create_duration = "7m"
+  create_duration = "15m"
 }
 
 data "kubernetes_pod" "debug2" {
   depends_on = [
-    time_sleep.wait_7_min
+    time_sleep.wait_15_min
   ]
   metadata {
     name = "cloudwatch"
