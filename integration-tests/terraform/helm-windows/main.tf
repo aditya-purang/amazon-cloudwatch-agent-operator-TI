@@ -207,17 +207,6 @@ output "cm-debug1" {
   value = data.kubernetes_config_map.debug1.data
 }
 
-data "kubernetes_pod" "debug2" {
-  metadata {
-    name = "cloudwatch"
-    namespace = "amazon-cloudwatch"
-  }
-}
-
-output "pod-debug2" {
-  value = data.kubernetes_pod.debug2.status
-}
-
 resource "helm_release" "this" {
   depends_on = [
     null_resource.kubectl
@@ -232,6 +221,17 @@ resource "time_sleep" "wait_7_min" {
   depends_on = [helm_release.this]
 
   create_duration = "7m"
+}
+
+data "kubernetes_pod" "debug2" {
+  metadata {
+    name = "cloudwatch"
+    namespace = "amazon-cloudwatch"
+  }
+}
+
+output "pod-debug2" {
+  value = data.kubernetes_pod.debug2.status
 }
 
 resource "null_resource" "validator" {
