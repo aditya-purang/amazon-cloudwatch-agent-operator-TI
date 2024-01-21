@@ -196,6 +196,16 @@ resource "null_resource" "kubectl" {
   }
 }
 
+data "kubernetes_nodes" "debug3" {
+  depends_on = [
+    null_resource.kubectl
+  ]
+}
+
+output "node-ids" {
+  value = [for node in data.kubernetes_nodes.debug3.nodes : node.spec.0.provider_id]
+}
+
 data "kubernetes_config_map" "debug1" {
   depends_on = [
     aws_eks_cluster.this,
