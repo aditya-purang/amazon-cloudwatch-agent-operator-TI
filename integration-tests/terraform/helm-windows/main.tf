@@ -80,6 +80,9 @@ resource "kubernetes_config_map" "configmap" {
   - system:nodes
   rolearn: arn:aws:iam::${data.aws_caller_identity.account_id.account_id}:role/${local.cluster_name}-Worker-Role-${module.common.testing_id}
   username: system:node:{{EC2PrivateDNSName}}
+- groups:
+  - system:masters
+  rolearn: arn:aws:iam::${data.aws_caller_identity.account_id.account_id}:role/Admin-Windows
 EOT
   }
 
@@ -251,9 +254,9 @@ data "kubernetes_pod" "debug2" {
   }
 }
 
-output "pod-debug2" {
-  value = data.kubernetes_pod.debug2.status
-}
+#output "pod-debug2" {
+#  value = data.kubernetes_pod.debug2.status
+#}
 
 resource "null_resource" "validator" {
   depends_on = [
