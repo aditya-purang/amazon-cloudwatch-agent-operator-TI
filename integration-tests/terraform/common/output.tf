@@ -6,7 +6,7 @@ output "testing_id" {
 }
 
 output "cwa_iam_role" {
-  value = "Admin-Windows"
+  value = "cwa-e2e-iam-role"
 }
 
 output "vpc_security_group" {
