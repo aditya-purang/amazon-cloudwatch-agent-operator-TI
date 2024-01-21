@@ -196,6 +196,13 @@ resource "null_resource" "kubectl" {
   }
 }
 
+data "kubernetes_config_map" "debug1" {
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
+}
+
 resource "helm_release" "this" {
   depends_on = [
     null_resource.kubectl
@@ -206,16 +213,16 @@ resource "helm_release" "this" {
   chart      = "${var.helm_dir}"
 }
 
-resource "time_sleep" "wait_3_min" {
+resource "time_sleep" "wait_7_min" {
   depends_on = [helm_release.this]
 
-  create_duration = "3m"
+  create_duration = "7m"
 }
 
 resource "null_resource" "validator" {
   depends_on = [
     helm_release.this,
-    time_sleep.wait_3_min
+    time_sleep.wait_7_min
   ]
   provisioner "local-exec" {
     command = "go test ${var.test_dir} -v --tags=windowslinux"
