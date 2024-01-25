@@ -134,7 +134,7 @@ resource "aws_eks_node_group" "node_group_windows" {
   ami_type       = "WINDOWS_CORE_2022_x86_64"
   capacity_type  = "ON_DEMAND"
   disk_size      = 50
-  instance_types = ["t3a.medium"]
+  instance_types = ["t3x.large"]
 
   depends_on = [
     aws_iam_role_policy_attachment.node_CloudWatchAgentServerPolicy,
@@ -241,7 +241,7 @@ resource "helm_release" "this" {
 resource "time_sleep" "wait_15_min" {
   depends_on = [helm_release.this]
 
-  create_duration = "15m"
+  create_duration = "5m"
 }
 
 data "kubernetes_pod" "debug2" {
