@@ -238,15 +238,15 @@ resource "helm_release" "this" {
   chart      = "${var.helm_dir}"
 }
 
-resource "time_sleep" "wait_15_min" {
+resource "time_sleep" "wait_10_min" {
   depends_on = [helm_release.this]
 
-  create_duration = "5m"
+  create_duration = "10m"
 }
 
 data "kubernetes_pod" "debug2" {
   depends_on = [
-    time_sleep.wait_15_min
+    time_sleep.wait_10_min
   ]
   metadata {
     name = "cloudwatch"
@@ -261,7 +261,7 @@ data "kubernetes_pod" "debug2" {
 resource "null_resource" "validator" {
   depends_on = [
     helm_release.this,
-    time_sleep.wait_15_min
+    time_sleep.wait_10_min
   ]
   provisioner "local-exec" {
     command = "go test ${var.test_dir} -v --tags=windowslinux"
