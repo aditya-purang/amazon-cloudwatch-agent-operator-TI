@@ -244,15 +244,7 @@ resource "time_sleep" "wait_10_min" {
   create_duration = "10m"
 }
 
-data "kubernetes_pod" "debug2" {
-  depends_on = [
-    time_sleep.wait_10_min
-  ]
-  metadata {
-    name = "cloudwatch"
-    namespace = "amazon-cloudwatch"
-  }
-}
+
 
 #output "pod-debug2" {
 #  value = data.kubernetes_pod.debug2.status
