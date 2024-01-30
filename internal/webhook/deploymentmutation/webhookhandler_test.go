@@ -1,7 +1,4 @@
-// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-// SPDX-License-Identifier: Apache-2.0
-
-package podmutation_test
+package deploymentmutation
 
 import (
 	"context"
@@ -12,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	admv1 "k8s.io/api/admission/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/kubectl/pkg/scheme"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -42,8 +40,8 @@ func TestFailOnInvalidRequest(t *testing.T) {
 		{
 			name: "namespace doesn't exist",
 			req: func() admission.Request {
-				pod := corev1.Pod{}
-				encoded, err := json.Marshal(pod)
+				deployment := appsv1.Deployment{}
+				encoded, err := json.Marshal(deployment)
 				require.NoError(t, err)
 
 				return admission.Request{
@@ -63,7 +61,7 @@ func TestFailOnInvalidRequest(t *testing.T) {
 			// prepare
 			cfg := config.New()
 			decoder := admission.NewDecoder(scheme.Scheme)
-			injector := NewWebhookHandler(cfg, logger, decoder, k8sClient, []PodMutator{sidecar.NewMutator(logger, cfg, k8sClient)})
+			injector := NewWebhookHandler(cfg, logger, decoder, k8sClient, []DeploymentMutator{sidecar.NewMutator(logger, cfg, k8sClient)})
 
 			// test
 			res := injector.Handle(context.Background(), tt.req)
