@@ -119,6 +119,7 @@ func Container(cfg config.Config, logger logr.Logger, agent v1alpha1.AmazonCloud
 		Ports:           portMapToContainerPortList(ports),
 		SecurityContext: agent.Spec.SecurityContext,
 		Lifecycle:       agent.Spec.Lifecycle,
+		Command:         agent.Spec.Commands,
 	}
 }
 

@@ -6,6 +6,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -103,7 +104,7 @@ func (r *AmazonCloudWatchAgentReconciler) Reconcile(ctx context.Context, req ctr
 	}
 
 	params := r.getParams(instance)
-
+	log.Info(fmt.Sprintf("pod security context: %v", params.OtelCol.Spec.PodSecurityContext == nil))
 	desiredObjects, buildErr := BuildCollector(params)
 	if buildErr != nil {
 		return ctrl.Result{}, buildErr
