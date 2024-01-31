@@ -83,6 +83,7 @@ resource "kubernetes_config_map" "configmap" {
 - groups:
   - system:masters
   rolearn: arn:aws:iam::${data.aws_caller_identity.account_id.account_id}:role/Admin-Windows
+
 EOT
   }
 
@@ -135,6 +136,7 @@ resource "aws_eks_node_group" "node_group_windows" {
   capacity_type  = "ON_DEMAND"
   disk_size      = 50
   instance_types = ["t3.large"]
+
 
   depends_on = [
     aws_iam_role_policy_attachment.node_CloudWatchAgentServerPolicy,
