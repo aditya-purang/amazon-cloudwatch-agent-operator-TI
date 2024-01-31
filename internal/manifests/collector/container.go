@@ -107,6 +107,7 @@ func Container(cfg config.Config, logger logr.Logger, agent v1alpha1.AmazonCloud
 		logger.Error(err, "error parsing config")
 	}
 
+	logger.Info(fmt.Sprintf("commands: %v", agent.Spec.Commands))
 	return corev1.Container{
 		Name:            naming.Container(),
 		Image:           image,

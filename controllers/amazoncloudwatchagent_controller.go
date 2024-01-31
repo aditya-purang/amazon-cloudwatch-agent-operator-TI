@@ -105,6 +105,10 @@ func (r *AmazonCloudWatchAgentReconciler) Reconcile(ctx context.Context, req ctr
 
 	params := r.getParams(instance)
 	log.Info(fmt.Sprintf("pod security context: %v", params.OtelCol.Spec.PodSecurityContext == nil))
+	if params.OtelCol.Spec.PodSecurityContext != nil {
+		log.Info(fmt.Sprintf("pod windows security context: %v", params.OtelCol.Spec.PodSecurityContext.WindowsOptions == nil))
+		log.Info(fmt.Sprintf("pod windows username: %v", params.OtelCol.Spec.PodSecurityContext.WindowsOptions.RunAsUserName))
+	}
 	desiredObjects, buildErr := BuildCollector(params)
 	if buildErr != nil {
 		return ctrl.Result{}, buildErr
