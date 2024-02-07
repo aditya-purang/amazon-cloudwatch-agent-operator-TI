@@ -262,7 +262,7 @@ resource "null_resource" "deployment_wait" {
 resource "null_resource" "validator" {
   depends_on = [
     helm_release.this,
-    kubectl.deployment_wait
+    null_resource.deployment_wait
   ]
   provisioner "local-exec" {
     command = "go test ${var.test_dir} -v --tags=windowslinux"
