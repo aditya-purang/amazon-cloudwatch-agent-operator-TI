@@ -8,11 +8,15 @@ provider "aws" {
 provider "helm" {
   kubernetes {
     config_path = "${var.kube_dir}/config"
-    experiments {
-      manifest_resource = true
-    }
-    host                   = aws_eks_cluster.this.endpoint
-    cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks_windows_cluster_ca.certificate_authority[0].data)
-    token                  = data.aws_eks_cluster_auth.this.token
   }
+}
+
+provider "kubernetes" {
+  config_path = "${var.kube_dir}/config"
+  experiments {
+    manifest_resource = true
+  }
+  host                   = aws_eks_cluster.this.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks_windows_cluster_ca.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.this.token
 }
