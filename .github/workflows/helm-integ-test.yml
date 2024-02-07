@@ -47,10 +47,6 @@ jobs:
       - name: Set KUBECONFIG environment variable
         run: echo KUBECONFIG="${{ github.workspace }}/../../../.kube/config" >> $GITHUB_ENV
 
-      - uses: actions-hub/kubectl@master
-        env:
-          KUBE_CONFIG: ${{ github.workspace }}/../../../.kube/config
-
       - name: Verify Terraform version
         run: terraform --version
 

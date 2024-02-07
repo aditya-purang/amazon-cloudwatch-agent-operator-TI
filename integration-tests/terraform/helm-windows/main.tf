@@ -246,8 +246,10 @@ resource "kubectl" "deployment_wait" {
   ]
   provisioner "local-exec" {
     command = <<-EOT
-      kubectl rollout status daemonset fluent-bit-windows -n amazon-cloudwatch --timeout 600s
-      kubectl rollout status daemonset cloudwatch-agent-windows -n amazon-cloudwatch --timeout 600s
+      curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      chmod +x kubectl
+      ./kubectl rollout status daemonset fluent-bit-windows -n amazon-cloudwatch --timeout 600s
+      ./kubectl rollout status daemonset cloudwatch-agent-windows -n amazon-cloudwatch --timeout 600s
     EOT
   }
 }
