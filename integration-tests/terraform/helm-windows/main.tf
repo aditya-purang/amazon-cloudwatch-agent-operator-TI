@@ -241,6 +241,9 @@ resource "helm_release" "this" {
 }
 
 resource "kubernetes_manifest" "ciwindows-cwagent-deployment" {
+  depends_on = [
+    helm_release.this
+  ]
   manifest = {
     apiVersion = "apps/v1"
     kind       = "DaemonSet"
@@ -263,6 +266,9 @@ resource "kubernetes_manifest" "ciwindows-cwagent-deployment" {
 }
 
 resource "kubernetes_manifest" "ciwindows-fluentbit-deployment" {
+  depends_on = [
+    helm_release.this
+  ]
   manifest = {
     apiVersion = "apps/v1"
     kind       = "DaemonSet"
