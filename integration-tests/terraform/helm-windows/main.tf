@@ -240,7 +240,7 @@ resource "helm_release" "this" {
   chart      = "${var.helm_dir}"
 }
 
-resource "kubectl" "deployment_wait" {
+resource "null_resource" "deployment_wait" {
   depends_on = [
     helm_release.this,
   ]
