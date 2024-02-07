@@ -240,56 +240,17 @@ resource "helm_release" "this" {
   chart      = "${var.helm_dir}"
 }
 
-resource "kubernetes_manifest" "ciwindows-cwagent-deployment" {
+resource "kubectl" "deployment_wait" {
   depends_on = [
-    helm_release.this
+    helm_release.this,
   ]
-  manifest = {
-    apiVersion = "apps/v1"
-    kind       = "DaemonSet"
-
-    metadata = {
-      name = "cloudwatch-agent-windows"
-    }// ...
-  }
-
-  wait {
-    fields = {
-      # Check the phase of a pod
-      "status.phase" = "Running"
-    }
-  }
-
-  timeouts {
-    create = "10m"
+  provisioner "local-exec" {
+    command = <<-EOT
+      kubectl rollout status daemonset fluent-bit-windows -n amazon-cloudwatch --timeout 600s
+      kubectl rollout status daemonset cloudwatch-agent-windows -n amazon-cloudwatch --timeout 600s
+    EOT
   }
 }
-
-resource "kubernetes_manifest" "ciwindows-fluentbit-deployment" {
-  depends_on = [
-    helm_release.this
-  ]
-  manifest = {
-    apiVersion = "apps/v1"
-    kind       = "DaemonSet"
-
-    metadata = {
-      name = "fluent-bit-windows"
-    }
-  }
-
-  wait {
-    fields = {
-      # Check the phase of a pod
-      "status.phase" = "Running"
-    }
-  }
-
-  timeouts {
-    create = "10m"
-  }
-}
-
 
 
 #output "pod-debug2" {
@@ -299,8 +260,7 @@ resource "kubernetes_manifest" "ciwindows-fluentbit-deployment" {
 resource "null_resource" "validator" {
   depends_on = [
     helm_release.this,
-    kubernetes_manifest.ciwindows-cwagent-deployment,
-    kubernetes_manifest.ciwindows-fluentbit-deployment
+    kubectl.deployment_wait
   ]
   provisioner "local-exec" {
     command = "go test ${var.test_dir} -v --tags=windowslinux"
