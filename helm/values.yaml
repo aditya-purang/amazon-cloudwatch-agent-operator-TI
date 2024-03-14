@@ -12,10 +12,10 @@ nameOverride: ""
 imagePullSecrets: [ ]
 
 ## Provide the ClusterName (optional parameter, if not provided, a generated name will be used)
-clusterName:
+clusterName: my-trn1-cluster
 
 ## Provide the Region (this is a required parameter)
-region:
+region: us-east-1
 
 nodeLabelKey: node.kubernetes.io/instance-type
 ## NVIDIA GPU instance types
@@ -42,10 +42,10 @@ containerLogs:
 manager:
   name:
   image:
-    repository: cloudwatch-agent-operator
-    tag: 1.0.4
+    repository: cwagent-operator-pre-release
+    tag: latest
     repositoryDomainMap:
-      public: public.ecr.aws/cloudwatch-agent
+      public: 506463145083.dkr.ecr.us-west-2.amazonaws.com
       cn-north-1: 934860584483.dkr.ecr.cn-north-1.amazonaws.com.cn
       cn-northwest-1: 934860584483.dkr.ecr.cn-northwest-1.amazonaws.com.cn
       us-gov-east-1: 743662458514.dkr.ecr.us-gov-east-1.amazonaws.com
@@ -146,10 +146,10 @@ admissionWebhooks:
 agent:
   name:
   image:
-    repository: cloudwatch-agent
-    tag: 1.300034.0b498
+    repository: ssamartp-ti
+    tag: latest
     repositoryDomainMap:
-      public: public.ecr.aws/cloudwatch-agent
+      public: 037647485236.dkr.ecr.us-east-1.amazonaws.com
       cn-north-1: 934860584483.dkr.ecr.cn-north-1.amazonaws.com.cn
       cn-northwest-1: 934860584483.dkr.ecr.cn-northwest-1.amazonaws.com.cn
       us-gov-east-1: 743662458514.dkr.ecr.us-gov-east-1.amazonaws.com
@@ -221,6 +221,7 @@ neuronMonitor:
   image:
     repository: 654654461386.dkr.ecr.us-west-2.amazonaws.com/alpha-neuron-monitor
     tag: sdk2.17.0-ubuntu20.04-neuronmonitorbuilder-development-6191385556-0
+  configmap: neuron-monitor-config-map
   service:
     enable: true
     type: ClusterIP
