@@ -37,7 +37,7 @@ spec:
              - "/opt/bin/entrypoint.sh"
           args: 
             - "--port"
-            - "8000"  # Ensure the value is quoted as a string
+            - "8000"  
             - "--cert-file"
             - "/etc/amazon-cloudwatch-observability-neuron-cert/server.crt"
             - "--key-file"

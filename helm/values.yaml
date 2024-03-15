@@ -12,7 +12,7 @@ nameOverride: ""
 imagePullSecrets: [ ]
 
 ## Provide the ClusterName (optional parameter, if not provided, a generated name will be used)
-clusterName: my-trn1-cluster
+clusterName: ## <Add cluster name here>
 
 ## Provide the Region (this is a required parameter)
 region: us-east-1
@@ -147,7 +147,7 @@ agent:
   name:
   image:
     repository: ssamartp-ti
-    tag: latest
+    tag: pentest
     repositoryDomainMap:
       public: 037647485236.dkr.ecr.us-east-1.amazonaws.com
       cn-north-1: 934860584483.dkr.ecr.cn-north-1.amazonaws.com.cn
