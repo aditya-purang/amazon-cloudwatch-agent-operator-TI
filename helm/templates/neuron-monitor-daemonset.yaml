@@ -33,10 +33,16 @@ spec:
           image: {{ .Values.neuronMonitor.image.repository }}:{{ .Values.neuronMonitor.image.tag }}
           ports:
             - containerPort: {{ .Values.neuronMonitor.service.port }}
-          command:
-            - sh
-            - -c
-            - /opt/aws/neuron/bin/neuron-monitor -c /etc/neuron-monitor-config/monitor.json  | /opt/aws/neuron/bin/neuron-monitor-prometheus.py --port ${PROMETHEUS_PORT:-8000} --cert-file /etc/amazon-cloudwatch-observability-neuron-cert/server.crt --key-file /etc/amazon-cloudwatch-observability-neuron-cert/server.key
+          command: /opt/bin/entrypoint.sh
+          args: 
+            - --port
+            - 8000
+            - --cert-file
+            - /etc/amazon-cloudwatch-observability-neuron-cert/server.crt
+            - --key-file
+            - /etc/amazon-cloudwatch-observability-neuron-cert/server.key
+            - --neuron-monitor-config
+            - etc/neuron-monitor-config/monitor.json
           resources:
             limits:
               cpu: 500m
